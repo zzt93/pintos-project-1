@@ -1,0 +1,19 @@
+squish-pty bochs -q
+========================================================================
+                       Bochs x86 Emulator 2.4.5
+              Build from CVS snapshot, on April 25, 2010
+========================================================================
+PiLo hda1
+Loading........
+Kernel command line: run alarm-mucho
+Pintos booting with 4,096 kB RAM...
+383 pages available in kernel pool.
+383 pages available in user pool.
+Calibrating timer...  204,600 loops/s.
+Boot complete.
+Executing 'alarm-mucho':
+Kernel PANIC at ../../tests/threads/tests.c:61 in run_test(): no test named "alarm-mucho"
+Call stack: 0xc002832c 0xc002a23d 0xc00201d5 0xc002077b.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
