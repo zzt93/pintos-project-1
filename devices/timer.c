@@ -1,12 +1,11 @@
-#include "devices/timer.h"
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
 #include <stdio.h>
 #include "devices/pit.h"
 #include "threads/interrupt.h"
-#include "threads/synch.h"
 #include "threads/thread.h"
+#include "devices/timer.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -29,15 +28,23 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
+//static struct list semaphores;
+//static struct lock semLock;
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
 timer_init (void) 
 {
+  //list_init(&semaphores);
+  //lock_init(&semLock);
+  printf("initializing timer...\n");
+
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  
 }
+
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
 void
@@ -89,12 +96,33 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+  printf("attempting to sleep\n");
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+//  struct semaphore sem;
+//  sema_init(&sem, 1);
+  
+ //struct wakeup wake;
+ // wake.time = start + ticks;
+ // wake.signal = &sem;
+
+//	printf("time: %d\n",wake.time);
+
+  intr_disable();
+  struct thread* t = thread_current();
+  t->wakeup_time = start + ticks;
+  intr_enable();
+  printf("sleeping %d. will wake at %d\n", t->tid, t->wakeup_time);
+  sema_down(&(t->sem));
 }
+
+/*bool
+lessFunction(struct list_elem *compareThis, struct list_elem *compareTo, void *aux)
+{
+  return list_entry(compareThis,struct wakeup,link)->time < list_entry(compareTo,struct wakeup,link)->time;
+}*/
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
@@ -171,7 +199,33 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+ if(ticks % 10 == 0)
+    printf("ticking...\n");
+  thread_foreach(&threadFunction, &ticks);
+  /*
+  struct list_elem *elem = list_begin(&semaphores);
+  struct wakeup *wake = list_entry(elem,struct wakeup,link);
+	printf("Hello 202: %d\t%d\t\n",ticks,wake->time,list_size(&semaphores));
+  while(elem->next != NULL && ticks >= wake->time)
+  {
+	printf("Hello 204\n");
+    sema_up(wake->signal);
+    list_remove(elem);
+    wake = list_entry(elem,struct wakeup,link);
+  }*/
   thread_tick ();
+}
+
+void
+threadFunction(struct thread* t, void* time)
+{
+  printf("testing thread %d at time %d:\n", t->tid, (int)(*((int64_t*)time)));
+  if(t->wakeup_time != -1 && t->wakeup_time < *((int64_t*)time))
+  {
+     printf("waking thread %d at time %d.\n", t->tid, (int)(*((int64_t*)time)));
+     sema_up(&(t->sem));
+     t->wakeup_time = -1;
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

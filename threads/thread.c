@@ -174,6 +174,9 @@ thread_create (const char *name, int priority,
   enum intr_level old_level;
 
   ASSERT (function != NULL);
+  printf("creating thread %d\n", t->tid);
+  sema_init(&(t->sem), 0);
+  t->wakeup_time = -1;
 
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
