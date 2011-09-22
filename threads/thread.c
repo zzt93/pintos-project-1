@@ -174,9 +174,8 @@ thread_create (const char *name, int priority,
   enum intr_level old_level;
 
   ASSERT (function != NULL);
-  printf("creating thread %d\n", t->tid);
-  sema_init(&(t->sem), 0);
-  t->wakeup_time = -1;
+  //printf("creating thread %d\n", t->tid);
+
 
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
@@ -186,6 +185,9 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+
+  sema_init(&(t->sem), 0);
+  t->wakeup_time = -1;
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
