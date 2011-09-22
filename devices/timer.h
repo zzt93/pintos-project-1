@@ -27,15 +27,6 @@ void timer_ndelay (int64_t nanoseconds);
 
 void timer_print_stats (void);
 
-/*struct wakeup
-{
-  struct list_elem link;
-  struct semaphore* signal;
-  int64_t time;
-};*/
-
-//bool lessFunction (struct list_elem *, struct list_elem *, void *);
-
 void threadFunction(struct thread*, void*);
 
 #endif /* devices/timer.h */
