@@ -110,12 +110,12 @@ timer_sleep (int64_t ticks)
 
 //	printf("time: %d\n",wake.time);
 
-  intr_disable();
-  struct thread* t = thread_current();
-  t->wakeup_time = start + ticks;
-  intr_enable();
-  printf("sleeping %d. will wake at %d\n", t->tid, t->wakeup_time);
-  sema_down(&(t->sem));
+  //intr_disable();
+  //struct thread* t = thread_current();
+  //t->wakeup_time = start + ticks;
+  //intr_enable();
+  //printf("sleeping %d. will wake at %d\n", t->tid, t->wakeup_time);
+  //sema_down(&(t->sem));
 }
 
 /*bool
@@ -167,7 +167,7 @@ timer_mdelay (int64_t ms)
    Busy waiting wastes CPU cycles, and busy waiting with
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_usleep()
-   instead if interrupts are enabled. */
+   insteadthr if interrupts are enabled. */
 void
 timer_udelay (int64_t us) 
 {
@@ -199,8 +199,8 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
- if(ticks % 10 == 0)
-    printf("ticking...\n");
+  //if(ticks % 10 == 0)
+  //printf("ticking...\n");
   thread_foreach(&threadFunction, &ticks);
   /*
   struct list_elem *elem = list_begin(&semaphores);
@@ -219,10 +219,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
 void
 threadFunction(struct thread* t, void* time)
 {
-  printf("testing thread %d at time %d:\n", t->tid, (int)(*((int64_t*)time)));
+  //printf("testing thread %d at time %d:\n", t->tid, (int)(*((int64_t*)time)));
   if(t->wakeup_time != -1 && t->wakeup_time < *((int64_t*)time))
   {
-     printf("waking thread %d at time %d.\n", t->tid, (int)(*((int64_t*)time)));
+     //printf("waking thread %d at time %d.\n", t->tid, (int)(*((int64_t*)time)));
      sema_up(&(t->sem));
      t->wakeup_time = -1;
   }
