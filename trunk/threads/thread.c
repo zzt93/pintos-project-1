@@ -245,9 +245,24 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  //list_push_back (&ready_list, &t->elem);
+
+  // list_insert_ordered calls for thread_compare to be a less function
+  // however, we are implementing it as a greater function so that the list
+  // will be sorted with the largest element first.
+  list_insert_ordered(&ready_list, &t->elem, &thread_priority_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+}
+
+// returns true if one >= two
+// i.e. if true, one will occur before two in the list
+bool
+thread_priority_compare (struct list_elem* one, struct list_elem* two, void* aux)
+{
+  struct thread *t_one = list_entry (one, struct thread, elem);
+  struct thread *t_two = list_entry (two, struct thread, elem);
+  return t_one->priority > t_two->priority;
 }
 
 /* Returns the name of the running thread. */
@@ -316,7 +331,8 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered (&ready_list, &cur->elem, &thread_priority_compare, NULL);
+//    list_push_back (&ready_list, &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
