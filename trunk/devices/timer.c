@@ -190,10 +190,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
 void
 threadFunction(struct thread* t, void* time)
 {
-  if(t->wakeup_time != -1 && t->wakeup_time < *((int*)time))
+  if(t->wakeup_time != -1 && !(t->wakeup_time > *((int*)time)))
   {
-     sema_up(&(t->sem));
      t->wakeup_time = -1;
+     sema_up(&(t->sem));
   }
 }
 
