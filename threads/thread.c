@@ -252,7 +252,43 @@ thread_unblock (struct thread *t)
   // will be sorted with the largest element first.
   list_insert_ordered(&ready_list, &t->elem, &thread_priority_compare, NULL);
   t->status = THREAD_READY;
-  intr_set_level (old_level);
+
+  intr_set_level (old_level);  
+
+  thread_yield_to_higher_priority();
+}
+
+void
+thread_yield_to_higher_priority(void)
+{
+  enum intr_level old_level = intr_disable();
+  if(!list_empty(&ready_list))
+  {
+    struct thread *cur = thread_current();
+    struct thread *max = list_entry (list_begin (&ready_list), struct thread, elem);
+    if(max->priority > cur->priority)
+    {
+      if(intr_context())
+        intr_yield_on_return();
+      else
+        thread_yield();
+    }
+  }
+  intr_set_level(old_level);
+}
+
+void
+print_ready_list(void)
+{
+  struct list_elem *e;
+
+  printf("List begin:\n");
+  for(e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
+  {
+    struct thread *t = list_entry(e, struct thread, elem);
+    printf("%s:%d\n", t->name, t->priority);
+  }
+  printf("List end.\n");
 }
 
 // returns true if one >= two
