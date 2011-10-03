@@ -38,7 +38,7 @@ timer_init (void)
 {
   //list_init(&semaphores);
   //lock_init(&semLock);
-  printf("initializing timer...\n");
+  //printf("initializing timer...\n");
 
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
