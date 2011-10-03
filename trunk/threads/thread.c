@@ -108,7 +108,9 @@ thread_start (void)
   /* Create the idle thread. */
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
+	//print_ready_list();
   thread_create ("idle", PRI_MIN, idle, &idle_started);
+	//print_ready_list();
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -221,6 +223,8 @@ thread_create (const char *name, int priority,
 void
 thread_block (void) 
 {
+	//printf("Blocking %s\n",thread_current()->name);
+	//print_ready_list();
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
 
@@ -239,6 +243,10 @@ thread_block (void)
 void
 thread_unblock (struct thread *t) 
 {
+	//printf("Unblocking %s\n",t->name);
+	//print_ready_list();
+	
+	int is_idle = 0;
   enum intr_level old_level;
 
   ASSERT (is_thread (t));
@@ -250,17 +258,26 @@ thread_unblock (struct thread *t)
   // list_insert_ordered calls for thread_compare to be a less function
   // however, we are implementing it as a greater function so that the list
   // will be sorted with the largest element first.
-  list_insert_ordered(&ready_list, &t->elem, &thread_priority_compare, NULL);
+  if (t != idle_thread)
+	{
+		is_idle++;
+		list_insert_ordered(&ready_list, &t->elem, &thread_priority_compare, NULL);
+	}
   t->status = THREAD_READY;
 
-  intr_set_level (old_level);  
+  intr_set_level (old_level);
+	//printf("is_idle:%d\n", is_idle);
 
-  thread_yield_to_higher_priority();
+	if(thread_current() != idle_thread)
+		thread_yield_to_higher_priority();
 }
 
 void
 thread_yield_to_higher_priority(void)
 {
+	//printf("Current: %s\t264\n",thread_current()->name);
+	//print_ready_list();
+	
   enum intr_level old_level = intr_disable();
   if(!list_empty(&ready_list))
   {
@@ -268,6 +285,7 @@ thread_yield_to_higher_priority(void)
     struct thread *max = list_entry (list_begin (&ready_list), struct thread, elem);
     if(max->priority > cur->priority)
     {
+			//printf("Current %s has %d\t Max %s has %d\n",cur->name,cur->priority,max->name,max->priority);
       if(intr_context())
         intr_yield_on_return();
       else
@@ -299,6 +317,10 @@ thread_priority_compare (struct list_elem* one, struct list_elem* two, void* aux
   struct thread *t_one = list_entry (one, struct thread, elem);
   struct thread *t_two = list_entry (two, struct thread, elem);
   return t_one->priority > t_two->priority;
+}
+void insert_ready(struct list_elem* elem)
+{
+	list_insert_ordered (&ready_list, elem, &thread_priority_compare, NULL);
 }
 
 /* Returns the name of the running thread. */
@@ -341,6 +363,7 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
+	//printf("%s exiting\n",thread_current()->name);
 #ifdef USERPROG
   process_exit ();
 #endif
@@ -360,6 +383,8 @@ thread_exit (void)
 void
 thread_yield (void) 
 {
+	//printf("Current: %s\t365\n",thread_current()->name);
+	//print_ready_list();
   struct thread *cur = thread_current ();
   enum intr_level old_level;
   
@@ -396,6 +421,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+	thread_yield_to_higher_priority();
 }
 
 /* Returns the current thread's priority. */
@@ -597,6 +623,9 @@ thread_schedule_tail (struct thread *prev)
       ASSERT (prev != cur);
       palloc_free_page (prev);
     }
+	
+	//printf("Current: %s\t604\n",cur->name);
+	//print_ready_list();
 }
 
 /* Schedules a new process.  At entry, interrupts must be off and
@@ -612,6 +641,8 @@ schedule (void)
   struct thread *cur = running_thread ();
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
+	
+	//printf("Current: %s\t Next: %s",cur->name,next->name);
 
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
