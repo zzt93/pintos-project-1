@@ -92,8 +92,7 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-		struct semaphore sem;
-    struct list_elem holder;						/* List element for the semaphore 'holders' list. */
+		struct semaphore sem;								/* Semaphore for timer. */
     int64_t wakeup_time;
 
 #ifdef USERPROG
@@ -132,7 +131,7 @@ void thread_yield (void);
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
-bool thread_priority_compare (struct list_elem*, struct list_elem*, void*);
+bool thread_priority_compare (const struct list_elem*,const struct list_elem*, void* aux);
 void thread_yield_to_higher_priority(void);
 void print_ready_list(void);
 void insert_ready(struct list_elem* elem);

@@ -9,8 +9,15 @@ struct semaphore
   {
     unsigned value;             /* Current value. */
     struct list waiters;        /* List of waiting threads. */
-		//struct list holders;				/* List of holding threads. */
+		//struct thread* holding;
+		struct list holders;				/* List of holding threads. */
   };
+
+struct holder
+{
+	struct thread* t;
+	struct list_elem elem;
+};
 
 void sema_init (struct semaphore *, unsigned value);
 void sema_down (struct semaphore *);
@@ -42,8 +49,12 @@ void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
 
-bool cond_priority_compare (struct list_elem* one, struct list_elem* two, void* aux);
-bool holder_priority_compare (struct list_elem* one, struct list_elem* two, void* aux);
+void bump_priority(struct thread* t,int old_priority,int new_priority);
+bool cond_priority_compare (const struct list_elem* one,const struct list_elem* two, void* aux);
+bool holder_priority_compare (const struct list_elem* one, const struct list_elem* two, void* aux);
+void holding_insert(struct list* list,struct thread* t);
+void holding_remove(struct list* list,struct thread* t);
+void adjust_order(struct list_elem* elem,list_less_func* order_by);
 
 /* Optimization barrier.
 
