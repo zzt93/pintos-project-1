@@ -312,7 +312,7 @@ print_ready_list(void)
 // returns true if one >= two
 // i.e. if true, one will occur before two in the list
 bool
-thread_priority_compare (struct list_elem* one, struct list_elem* two, void* aux)
+thread_priority_compare (const struct list_elem* one,const struct list_elem* two, void* aux UNUSED)
 {
   struct thread *t_one = list_entry (one, struct thread, elem);
   struct thread *t_two = list_entry (two, struct thread, elem);
