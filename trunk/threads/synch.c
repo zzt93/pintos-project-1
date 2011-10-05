@@ -105,7 +105,7 @@ sema_down (struct semaphore *sema)
 	
 	//if (sema->holding == NULL) sema->holding = thread_current();
 	
-	//holding_insert(&sema->holders,thread_current());//NEEDS CHANGED
+	holding_insert(&sema->holders,thread_current());//NEEDS CHANGED
 	
 	//ASSERT(assert_count--);
 	
@@ -166,7 +166,7 @@ sema_up (struct semaphore *sema)
 	
   old_level = intr_disable ();
 	
-	//holding_remove(&sema->holders,thread_current());
+	holding_remove(&sema->holders,thread_current());
 	
 	//if (sema->holding == thread_current()) sema->holding = NULL;
 	
@@ -412,10 +412,11 @@ bool holder_priority_compare (const struct list_elem* one, const struct list_ele
 void holding_insert(struct list* list,struct thread* t)
 {
 	ASSERT(t!=NULL);
-	struct holder h;
+	static struct holder h;
 	h.t = t;
 	ASSERT(assert_count);
 	list_insert_ordered(list,&h.elem,&holder_priority_compare,NULL);
+	verifyList(list);
 }
 void holding_remove(struct list* list,struct thread* t)
 {
@@ -430,8 +431,23 @@ void holding_remove(struct list* list,struct thread* t)
 		else
 			elem = elem->next;
 	}
-	
+	verifyList(list);
+	//ASSERT(elem!=elem->next && ((elem->prev==NULL && elem->next==NULL) || (elem!=elem->prev && elem->prev!=elem->next)));
 }
+
+void verifyList(struct list* list)
+{
+	struct list_elem* elem = list_begin(list);
+	while (elem->next != NULL) {
+		ASSERT(elem != elem->next);
+		ASSERT(elem != elem->prev);
+		ASSERT(elem->prev != elem->next);
+		ASSERT(elem->prev != NULL);
+		ASSERT(elem->next != NULL);
+		elem = elem->next;
+	}
+}
+
 void adjust_order(struct list_elem* elem,list_less_func* order_by)
 {
 	if (elem->prev != NULL)
