@@ -28,17 +28,15 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
-//static struct list semaphores;
-//static struct lock semLock;
+
+static struct list sleepers;//st
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
 timer_init (void) 
 {
-  //list_init(&semaphores);
-  //lock_init(&semLock);
-  //printf("initializing timer...\n");
+  list_init(&sleepers);//st
 
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
@@ -103,9 +101,12 @@ timer_sleep (int64_t ticks)
   intr_disable();
   struct thread* t = thread_current();
   t->wakeup_time = start + ticks;
+	insert_sleep(&t->elem);//st
+	thread_block();//st
+	
   intr_enable();
   
-  sema_down(&(t->sem));
+  //st sema_down(&(t->sem));
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -183,7 +184,21 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
-  thread_foreach(&threadFunction, &ticks);
+  //st thread_foreach(&threadFunction, &ticks);
+	struct thread* t;
+	while (!list_empty(&sleepers))
+	{
+		t = list_entry(list_begin(&sleepers),struct thread,elem);
+		if (t->wakeup_time <= ticks)
+		{
+			list_remove(&t->elem);
+			thread_unblock(t);
+		}
+		else break;
+		
+	}
+	//st
+	
   thread_tick ();
 }
 
@@ -267,3 +282,14 @@ real_time_delay (int64_t num, int32_t denom)
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
 }
+
+//st
+void insert_sleep (struct list_elem* elem)
+{
+	list_insert_ordered (&sleepers,elem,&thread_wake_order,NULL);
+}
+bool thread_wake_order (const struct list_elem* one,const struct list_elem* two,void* aux)
+{
+	return list_entry(one,struct thread,elem)->wakeup_time < list_entry(two,struct thread,elem)->wakeup_time;
+}
+//st
