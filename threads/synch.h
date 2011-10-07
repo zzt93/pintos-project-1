@@ -43,6 +43,9 @@ void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
 
 bool cond_priority_compare (const struct list_elem* one, const struct list_elem* two, void* aux);
+void adjust_order(struct list_elem* elem,list_less_func* order_by);
+void bump_forward(struct list_elem* elem);
+void bump_back(struct list_elem* elem);
 
 /* Optimization barrier.
 

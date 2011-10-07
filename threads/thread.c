@@ -243,30 +243,23 @@ thread_block (void)
 void
 thread_unblock (struct thread *t) 
 {
-	//printf("Unblocking %s\n",t->name);
-	//print_ready_list();
-	
-	int is_idle = 0;
   enum intr_level old_level;
 
   ASSERT (is_thread (t));
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  //list_push_back (&ready_list, &t->elem);
 
   // list_insert_ordered calls for thread_compare to be a less function
   // however, we are implementing it as a greater function so that the list
   // will be sorted with the largest element first.
   if (t != idle_thread)
 	{
-		is_idle++;
 		insert_ready(t);
 	}
   t->status = THREAD_READY;
 
   intr_set_level (old_level);
-	//printf("is_idle:%d\n", is_idle);
 
 	if(thread_current() != idle_thread)
 		thread_yield_to_higher_priority();
@@ -275,15 +268,13 @@ thread_unblock (struct thread *t)
 void
 thread_yield_to_higher_priority(void)
 {
-	//printf("Current: %s\t264\n",thread_current()->name);
-	//print_ready_list();
 	
   enum intr_level old_level = intr_disable();
   if(!list_empty(&ready_list))
   {
     struct thread *cur = thread_current();
     struct thread *max = list_entry (list_begin (&ready_list), struct thread, elem);
-    if(max->priority > cur->priority)
+    if(max->priority > cur->priority || (cur->in_donation && cur->priority == max->priority))
     {
 			//printf("Current %s has %d\t Max %s has %d\n",cur->name,cur->priority,max->name,max->priority);
       if(intr_context())

@@ -8,6 +8,6 @@ panic: action=fatal
 user_shortcut: keys=ctrlaltdel
 gdbstub: enabled=1
 clock: sync=none, time0=0
-ata0-master: type=disk, path=/tmp/AkgYTrfI9E.dsk, mode=flat, cylinders=1, heads=16, spt=63, translation=none
-com1: enabled=1, mode=term, dev=/dev/stdout
+ata0-master: type=disk, path=/tmp/Ad627VRvqp.dsk, mode=flat, cylinders=1, heads=16, spt=63, translation=none
+com1: enabled=1, mode=file, dev=/dev/stdout
 display_library: nogui

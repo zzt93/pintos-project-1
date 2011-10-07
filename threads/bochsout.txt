@@ -29,7 +29,7 @@
 00000000000i[     ]   SB16 support: no
 00000000000i[     ]   USB support: no
 00000000000i[     ]   VGA extension support: vbe 
-00000000000i[MEM0 ] allocated memory at 0x7fcb52f3c010. after alignment, vector=0x7fcb52f3d000
+00000000000i[MEM0 ] allocated memory at 0x7f064c028010. after alignment, vector=0x7f064c029000
 00000000000i[MEM0 ] 4.00MB
 00000000000i[MEM0 ] mem block size = 0x00100000, blocks=4
 00000000000i[MEM0 ] rom at 0xfffe0000/131072 ('/home/ugrads/stolle09/cis520/usr/local/share/bochs/BIOS-bochs-latest')
@@ -54,7 +54,7 @@
 00000000000i[     ] init_dev of 'keyboard' plugin device by virtual method
 00000000000i[KBD  ] will paste characters every 1000 keyboard ticks
 00000000000i[     ] init_dev of 'harddrv' plugin device by virtual method
-00000000000i[HD   ] HD on ata0-0: '/tmp/AkgYTrfI9E.dsk' 'flat' mode 
+00000000000i[HD   ] HD on ata0-0: '/tmp/Ad627VRvqp.dsk' 'flat' mode 
 00000000000i[HD   ] Using boot sequence disk, none, none
 00000000000i[HD   ] Floppy boot signature check is enabled
 00000000000i[     ] init_dev of 'serial' plugin device by virtual method
@@ -95,42 +95,54 @@
 00000000000i[GDBST] addr fff0 len 1
 00000000000i[GDBST] addr fff0 len 8
 00000000000i[GDBST] addr fff0 len 7
-00000003305i[BIOS ] $Revision: 1.247 $ $Date: 2010/04/04 19:33:50 $
-00000316560i[KBD  ] reset-disable command received
-00000441798i[VBIOS] VGABios $Id: vgabios.c,v 1.69 2009/04/07 18:18:20 vruppert Exp $
-00000441869i[VGA  ] VBE known Display Interface b0c0
-00000441901i[VGA  ] VBE known Display Interface b0c5
-00000444826i[VBIOS] VBE Bios $Id: vbe.c,v 1.62 2009/01/25 15:46:25 vruppert Exp $
-00000757515i[BIOS ] Starting rombios32
-00000758012i[BIOS ] Shutdown flag 0
-00000758680i[BIOS ] ram_size=0x00400000
-00000759131i[BIOS ] ram_end=4MB
-00000770135i[BIOS ] Found 1 cpu(s)
-00000789404i[BIOS ] bios_table_addr: 0x000fbc18 end=0x000fcc00
-00000802081i[BIOS ] bios_table_cur_addr: 0x000fbc18
-00000814248i[BIOS ] ata0-0: PCHS=1/16/63 translation=none LCHS=1/16/63
-00004695695i[BIOS ] IDE time out
-00007718729i[BIOS ] Booting from 0000:7c00
-01196917456p[     ] >>PANIC<< SIGNAL 2 caught
-01196917456i[CPU0 ] CPU is in protected mode (active)
-01196917456i[CPU0 ] CS.d_b = 32 bit
-01196917456i[CPU0 ] SS.d_b = 32 bit
-01196917456i[CPU0 ] | EAX=00000000  EBX=c002de1a  ECX=00000780  EDX=000003f8
-01196917456i[CPU0 ] | ESP=c0106e18  EBP=c0106e40  ESI=00000054  EDI=c002fd85
-01196917456i[CPU0 ] | IOPL=0 id vip vif ac vm rf nt of df if tf SF zf AF pf CF
-01196917456i[CPU0 ] | SEG selector     base    limit G D
-01196917456i[CPU0 ] | SEG sltr(index|ti|rpl)     base    limit G D
-01196917456i[CPU0 ] |  CS:0008( 0001| 0|  0) 00000000 ffffffff 1 1
-01196917456i[CPU0 ] |  DS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-01196917456i[CPU0 ] |  SS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-01196917456i[CPU0 ] |  ES:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-01196917456i[CPU0 ] |  FS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-01196917456i[CPU0 ] |  GS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-01196917456i[CPU0 ] | EIP=c00287a4 (c00287a4)
-01196917456i[CPU0 ] | CR0=0xe0010015 CR2=0x00000000
-01196917456i[CPU0 ] | CR3=0x00101000 CR4=0x00000000
-01196917456i[CPU0 ] 0xc00287a4>> jmp .-2 (0xc00287a4) : EBFE
-01196917456i[CMOS ] Last time is 1196 (Wed Dec 31 18:19:56 1969)
-01196917456i[NGUI ] bx_nogui_gui_c::exit() not implemented yet.
-01196917456i[     ] restoring default signal behavior
-01196917456i[CTRL ] quit_sim called with exit code 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len e
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len e
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len e
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len e
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000i[GDBST] addr c0022c16 len 1
+00000000000p[     ] >>PANIC<< SIGNAL 2 caught
+00000000000i[CPU0 ] CPU is in real mode (active)
+00000000000i[CPU0 ] CS.d_b = 16 bit
+00000000000i[CPU0 ] SS.d_b = 16 bit
+00000000000i[CPU0 ] | EAX=00000000  EBX=00000000  ECX=00000000  EDX=00000f00
+00000000000i[CPU0 ] | ESP=00000000  EBP=00000000  ESI=00000000  EDI=00000000
+00000000000i[CPU0 ] | IOPL=0 id vip vif ac vm rf nt of df if tf sf zf af pf cf
+00000000000i[CPU0 ] | SEG selector     base    limit G D
+00000000000i[CPU0 ] | SEG sltr(index|ti|rpl)     base    limit G D
+00000000000i[CPU0 ] |  CS:f000( 1e00| 0|  0) ffff0000 0000ffff 0 0
+00000000000i[CPU0 ] |  DS:0000( 0000| 0|  0) 00000000 0000ffff 0 0
+00000000000i[CPU0 ] |  SS:0000( 0000| 0|  0) 00000000 0000ffff 0 0
+00000000000i[CPU0 ] |  ES:0000( 0000| 0|  0) 00000000 0000ffff 0 0
+00000000000i[CPU0 ] |  FS:0000( 0000| 0|  0) 00000000 0000ffff 0 0
+00000000000i[CPU0 ] |  GS:0000( 0000| 0|  0) 00000000 0000ffff 0 0
+00000000000i[CPU0 ] | EIP=0000fff0 (0000fff0)
+00000000000i[CPU0 ] | CR0=0x60000010 CR2=0x00000000
+00000000000i[CPU0 ] | CR3=0x00000000 CR4=0x00000000
+00000000000i[CPU0 ] 0x0000fff0>> jmp far f000:e05b : EA5BE000F0
+00000000000i[CMOS ] Last time is 0 (Wed Dec 31 18:00:00 1969)
+00000000000i[NGUI ] bx_nogui_gui_c::exit() not implemented yet.
+00000000000i[     ] restoring default signal behavior
+00000000000i[CTRL ] quit_sim called with exit code 1
