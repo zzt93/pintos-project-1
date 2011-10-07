@@ -124,10 +124,10 @@ sema_up (struct semaphore *sema)
 	
   old_level = intr_disable ();
 	
+	sema->value++;
 	if (!list_empty (&sema->waiters)) 
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
 																struct thread, elem));
-	sema->value++;
 	intr_set_level (old_level);
 }
 
@@ -205,15 +205,15 @@ lock_acquire (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
-  ASSERT (!lock_held_by_current_thread (lock));
-	
-	//enum intr_level old_level = intr_disable();//disable,record interrupts
+  ASSERT (!lock_held_by_current_thread (lock));	
+	enum intr_level old_level = intr_disable();//disable,record interrupts
+	struct thread* cur = thread_current();
 	if (lock->holder != NULL)//is the lock taken?
 	{
-		if (0)//lock->holder->priority < thread_current()->priority)//do we need to donate?
+		if (lock->holder->priority < cur->priority)//do we need to donate?
 		{
 			int prev_priority = lock->holder->priority;//store previous priority of holder;
-			lock->holder->priority = thread_current()->priority;//donate priority
+			lock->holder->priority = cur->priority;//donate priority
 			lock->holder->in_donation++;//tell the thread it's in donation
 			
 			if (lock->holder->waiting_on != NULL)//is the holding thread is waiting? or status == BLOCKED
@@ -222,28 +222,37 @@ lock_acquire (struct lock *lock)
 				//worry about blocked donation later
 			}ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list
 			
+			
+			//adjust_order(&lock->holder->elem,&thread_priority_compare);
 			list_remove(&lock->holder->elem);//remove from ready list
 			insert_ready(lock->holder);//add to ready list
 			
-			thread_current()->waiting_on = lock->holder;
+			cur->waiting_on = lock->holder;
 			sema_down (&lock->semaphore);
 			ASSERT(lock->holder == NULL);
 			
-			thread_current()->waiting_on->in_donation--;
+			cur->waiting_on->in_donation--;
 			
 			
-			if (thread_current()->waiting_on->base_priority > prev_priority || !thread_current()->waiting_on->in_donation)//!2?
-				thread_current()->waiting_on->priority = thread_current()->waiting_on->base_priority;
+			if (cur->waiting_on->base_priority > prev_priority || !cur->waiting_on->in_donation)//!2?
+				cur->waiting_on->priority = cur->waiting_on->base_priority;
 			else
-				thread_current()->waiting_on->priority = prev_priority;//reset priority to holder
+				cur->waiting_on->priority = prev_priority;//reset priority to holder
 			
-			thread_current()->waiting_on = NULL;
+			if (cur->waiting_on->status == THREAD_READY)
+			{
+				//adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
+				list_remove(&cur->waiting_on->elem);//remove from ready list
+				insert_ready(cur->waiting_on);//add to ready list
+			}
+			
+			cur->waiting_on = NULL;
 		}
 		else
 		{
-			thread_current()->waiting_on = lock->holder;
+			cur->waiting_on = lock->holder;
 			sema_down(&lock->semaphore);
-			thread_current()->waiting_on = NULL;
+			cur->waiting_on = NULL;
 		}
 	}
 	else sema_down(&lock->semaphore);
@@ -251,7 +260,7 @@ lock_acquire (struct lock *lock)
   lock->holder = thread_current ();
 	ASSERT(lock_held_by_current_thread(lock));
 	
-	//intr_set_level(old_level);
+	intr_set_level(old_level);
 }
 /* CLEAN COPY
  void
@@ -410,4 +419,36 @@ bool cond_priority_compare (const struct list_elem* one, const struct list_elem*
 	struct semaphore_elem *c_one = list_entry (one, struct semaphore_elem, elem);
 	struct semaphore_elem *c_two = list_entry (two, struct semaphore_elem, elem);
 	return c_one->priority > c_two->priority;
+}
+
+void adjust_order(struct list_elem* elem,list_less_func* order_by)
+{	
+	if (elem->prev != NULL && elem->prev->prev != NULL && order_by(elem,elem->prev,NULL)) {
+		bump_forward(elem);
+		while (elem->prev->prev != NULL && order_by(elem,elem->prev,NULL))
+			bump_forward(elem);
+	}
+	else if (elem->next != NULL && elem->next->next != NULL && !order_by(elem,elem->next,NULL))
+	{
+		bump_back(elem);
+		while (elem->next->next != NULL && !order_by(elem,elem->next,NULL)) {
+			bump_back(elem);
+		}
+	}
+}
+void bump_forward(struct list_elem* elem)
+{
+	struct list_elem* prev = elem->prev;
+	prev->next = elem->next;
+	elem->prev = prev->prev;
+	prev->prev = elem;
+	elem->next = prev;
+}
+void bump_back(struct list_elem* elem)
+{
+	struct list_elem* next = elem->next;
+	next->prev = elem->prev;
+	elem->next = next->next;
+	next->next = elem;
+	elem->prev = next;
 }
