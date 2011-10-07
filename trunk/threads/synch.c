@@ -26,18 +26,12 @@
  MODIFICATIONS.
  */
 #define MAX(a,b) ((a)>(b)?(a):(b))
-#define NOT_IMPLEMENTED 0
-#define WORKS 0
-static int assert_count = 2;
-
 
 #include "threads/synch.h"
 #include <stdio.h>
 #include <string.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-
-#define NOT_IMPLEMENTED 0
 
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
  nonnegative integer along with two atomic operators for
@@ -78,8 +72,6 @@ sema_down (struct semaphore *sema)
 		list_insert_ordered(&sema->waiters,&thread_current()->elem,&thread_priority_compare,NULL);
 		thread_block ();
 	}
-	
-	//ASSERT(assert_count--);
 	
   sema->value--;
   intr_set_level (old_level);
@@ -247,11 +239,8 @@ void donate_recursive(struct lock *lock)
 		donate_recursive(lock->holder->waiting_on_lock);
 		//waiting_on_lock is the lock the holder thread is waiting on
 	}
-	//ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list	
 	
 	adjust_order(&lock->holder->elem,&thread_priority_compare);
-	//list_remove(&lock->holder->elem);//remove from ready list
-	//insert_ready(lock->holder);//add to ready list
 	
 	cur->waiting_on = lock->holder;
 	cur->waiting_on_lock = lock;
@@ -266,25 +255,10 @@ void donate_recursive(struct lock *lock)
 	if (cur->waiting_on->status == THREAD_READY)
 	{
 		adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
-		//list_remove(&cur->waiting_on->elem);//remove from ready list
-		//insert_ready(cur->waiting_on);//add to ready list
 	}
 	
 	cur->waiting_on = NULL;
 }
-
-/* CLEAN COPY
- void
- lock_acquire (struct lock *lock)
- {
- ASSERT (lock != NULL);
- ASSERT (!intr_context ());
- ASSERT (!lock_held_by_current_thread (lock));
- 
- sema_down (&lock->semaphore);
- lock->holder = thread_current ();
- }
- END	*/
 
 /* Tries to acquires LOCK and returns true if successful or false
  on failure.  The lock must not already be held by the current
@@ -430,43 +404,4 @@ bool cond_priority_compare (const struct list_elem* one, const struct list_elem*
 	struct semaphore_elem *c_one = list_entry (one, struct semaphore_elem, elem);
 	struct semaphore_elem *c_two = list_entry (two, struct semaphore_elem, elem);
 	return c_one->priority > c_two->priority;
-}
-
-void adjust_order(struct list_elem* elem,list_less_func* order_by)
-{	
-	if (elem->prev != NULL && elem->prev->prev != NULL && order_by(elem,elem->prev,NULL)) {
-		bump_forward(elem);
-		while (elem->prev->prev != NULL && order_by(elem,elem->prev,NULL))
-			bump_forward(elem);
-	}
-	else if (elem->next != NULL && elem->next->next != NULL && !order_by(elem,elem->next,NULL))
-	{
-		bump_back(elem);
-		while (elem->next->next != NULL && !order_by(elem,elem->next,NULL)) {
-			bump_back(elem);
-		}
-	}
-}
-void bump_forward(struct list_elem* elem)
-{
-	struct list_elem* prev = elem->prev;
-	prev->next = elem->next;
-	elem->prev = prev->prev;
-	prev->prev = elem;
-	elem->next = prev;
-
-	elem->prev->next = elem;
-	prev->next->prev = prev;
-	
-}
-void bump_back(struct list_elem* elem)
-{
-	struct list_elem* next = elem->next;
-	next->prev = elem->prev;
-	elem->next = next->next;
-	next->next = elem;
-	elem->prev = next;
-
-	elem->next->prev = elem;
-	next->prev->next = next;	
 }

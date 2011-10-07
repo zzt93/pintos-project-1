@@ -444,6 +444,45 @@ list_sort (struct list *list, list_less_func *less, void *aux)
   ASSERT (is_sorted (list_begin (list), list_end (list), less, aux));
 }
 
+void adjust_order(struct list_elem* elem,list_less_func* order_by)
+{	
+	if (elem->prev != NULL && elem->prev->prev != NULL && order_by(elem,elem->prev,NULL)) {
+		bump_forward(elem);
+		while (elem->prev->prev != NULL && order_by(elem,elem->prev,NULL))
+			bump_forward(elem);
+	}
+	else if (elem->next != NULL && elem->next->next != NULL && !order_by(elem,elem->next,NULL))
+	{
+		bump_back(elem);
+		while (elem->next->next != NULL && !order_by(elem,elem->next,NULL)) {
+			bump_back(elem);
+		}
+	}
+}
+void bump_forward(struct list_elem* elem)
+{
+	struct list_elem* prev = elem->prev;
+	prev->next = elem->next;
+	elem->prev = prev->prev;
+	prev->prev = elem;
+	elem->next = prev;
+
+	elem->prev->next = elem;
+	prev->next->prev = prev;
+	
+}
+void bump_back(struct list_elem* elem)
+{
+	struct list_elem* next = elem->next;
+	next->prev = elem->prev;
+	elem->next = next->next;
+	next->next = elem;
+	elem->prev = next;
+
+	elem->next->prev = elem;
+	next->prev->next = next;	
+}
+
 /* Inserts ELEM in the proper position in LIST, which must be
    sorted according to LESS given auxiliary data AUX.
    Runs in O(n) average case in the number of elements in LIST. */

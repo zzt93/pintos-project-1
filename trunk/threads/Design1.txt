@@ -33,7 +33,7 @@ David Pekrul and Craig Johnson from a previous semester.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-wakeup_time...
+int64_t wakeup_time;
 
 
 ---- ALGORITHMS ----
@@ -44,13 +44,15 @@ wakeup_time...
 timer_sleep disables interrupts, and then gets a pointer to the currently
 running thread, which is the thread that is supposed to sleep.  This thread's
 wakeup_time is set to the current time plus however long the thread is 
-supposed to sleep.  The thread is then blocked, to be woken up by 
-timer_interrupt after it has slept long enough.
+supposed to sleep.  The thread is then added to the sleepers list and blocked,
+to be woken up by timer_interrupt after it has slept long enough.  In the 
+interrupt handler, all threads with a wakeup_timer <= current time are removed 
+from the sleepers list and unblocked/awoken.
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-sleepers is an ordered list, and timer_interrupt only interates through
+sleepers is an ordered list, and timer_interrupt only iterates through
 the sleepers until it reaches one that should not be woken up.  This eliminates
 the need to check every single sleeper.
 
