@@ -78,10 +78,6 @@ sema_down (struct semaphore *sema)
 		thread_block ();
 	}
 	
-	//if (sema->holding == NULL) sema->holding = thread_current();
-	
-	holding_insert(&sema->holders,thread_current());//NEEDS CHANGED
-	
 	//ASSERT(assert_count--);
 	
   sema->value--;
@@ -127,10 +123,6 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
 	
   old_level = intr_disable ();
-	
-	holding_remove(&sema->holders,thread_current());
-	
-	//if (sema->holding == thread_current()) sema->holding = NULL;
 	
 	if (!list_empty (&sema->waiters)) 
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
@@ -218,7 +210,7 @@ lock_acquire (struct lock *lock)
 	//enum intr_level old_level = intr_disable();//disable,record interrupts
 	if (lock->holder != NULL)//is the lock taken?
 	{
-		if (lock->holder->priority < thread_current()->priority)//do we need to donate?
+		if (0)//lock->holder->priority < thread_current()->priority)//do we need to donate?
 		{
 			int prev_priority = lock->holder->priority;//store previous priority of holder;
 			lock->holder->priority = thread_current()->priority;//donate priority
@@ -418,11 +410,4 @@ bool cond_priority_compare (const struct list_elem* one, const struct list_elem*
 	struct semaphore_elem *c_one = list_entry (one, struct semaphore_elem, elem);
 	struct semaphore_elem *c_two = list_entry (two, struct semaphore_elem, elem);
 	return c_one->priority > c_two->priority;
-}
-
-bool holder_priority_compare (const struct list_elem* one, const struct list_elem* two, void* aux UNUSED)
-{
-	struct holder *h_one = list_entry (one, struct holder, elem);
-	struct holder *h_two = list_entry (two, struct holder, elem);
-	return h_one->t->priority > h_two->t->priority;
 }
