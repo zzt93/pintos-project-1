@@ -5,8 +5,10 @@ CIS 520 - Programming Project #1
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@k-state.edu>
-FirstName LastName <email@k-state.edu>
+
+Eldon Weaver <ejweaver@k-state.edu>
+Andrew Berggren <andrew08@ksu.edu>
+Seth Tolle <stolle09@k-state.edu>
 ...
 
 ---- PRELIMINARIES ----
@@ -18,6 +20,9 @@ FirstName LastName <email@k-state.edu>
 >> preparing your submission, other than the Pintos documentation,
 >> course text, lecture notes, and course staff.
 
+While working on priority donatoin, we consulted the Design document by 
+David Pekrul and Craig Johnson from a previous semester.
+
 
                  ALARM CLOCK
                  ===========
@@ -28,24 +33,37 @@ FirstName LastName <email@k-state.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+wakeup_time...
+
 
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe what happens in a call to your timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
+timer_sleep disables interrupts, and then gets a pointer to the currently
+running thread, which is the thread that is supposed to sleep.  This thread's
+wakeup_time is set to the current time plus however long the thread is 
+supposed to sleep.  The thread is then blocked, to be woken up by 
+timer_interrupt after it has slept long enough.
+
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
+sleepers is an ordered list, and timer_interrupt only interates through
+the sleepers until it reaches one that should not be woken up.  This eliminates
+the need to check every single sleeper.
 
 ---- SYNCHRONIZATION ----
 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
+Interrupts are disabled to prevent race conditions.
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+
 
 
 ---- RATIONALE ----
@@ -53,6 +71,9 @@ FirstName LastName <email@k-state.edu>
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> other designs that you considered?
 
+We considered using looping through all of the sleeping threads during a 
+timer_interrupt, but decided to use an ordered list that eliminated the 
+need to check every sleeping thread.
 
 
              PRIORITY SCHEDULING
