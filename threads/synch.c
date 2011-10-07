@@ -25,6 +25,7 @@
  PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
  MODIFICATIONS.
  */
+#define MAX(a,b) ((a)>(b)?(a):(b))
 #define NOT_IMPLEMENTED 0
 #define WORKS 0
 static int assert_count = 2;
@@ -212,11 +213,12 @@ lock_acquire (struct lock *lock)
 	{
 		if (lock->holder->priority < cur->priority)//do we need to donate?
 		{
-			int prev_priority = lock->holder->priority;//store previous priority of holder;
+			if (lock->prev_priority == 0) lock->prev_priority = lock->holder->priority;
+			//store previous priority of holder;
 			lock->holder->priority = cur->priority;//donate priority
 			lock->holder->in_donation++;//tell the thread it's in donation
 			
-			if (lock->holder->waiting_on != NULL)//is the holding thread is waiting? or status == BLOCKED
+			if (lock->holder->status == THREAD_BLOCKED)//is the holding thread is waiting? or status == BLOCKED
 			{
 				ASSERT(NOT_IMPLEMENTED);
 				//worry about blocked donation later
@@ -233,11 +235,8 @@ lock_acquire (struct lock *lock)
 			
 			cur->waiting_on->in_donation--;
 			
-			
-			if (cur->waiting_on->base_priority > prev_priority || !cur->waiting_on->in_donation)//!2?
-				cur->waiting_on->priority = cur->waiting_on->base_priority;
-			else
-				cur->waiting_on->priority = prev_priority;//reset priority to holder
+			cur->waiting_on->priority = MAX((!!cur->waiting_on->in_donation)*lock->prev_priority,
+																			cur->waiting_on->base_priority);
 			
 			if (cur->waiting_on->status == THREAD_READY)
 			{
@@ -257,7 +256,8 @@ lock_acquire (struct lock *lock)
 	}
 	else sema_down(&lock->semaphore);
 	
-  lock->holder = thread_current ();
+  lock->holder = cur;
+	lock->prev_priority = 0;
 	ASSERT(lock_held_by_current_thread(lock));
 	
 	intr_set_level(old_level);
