@@ -29,7 +29,7 @@
 00000000000i[     ]   SB16 support: no
 00000000000i[     ]   USB support: no
 00000000000i[     ]   VGA extension support: vbe 
-00000000000i[MEM0 ] allocated memory at 0x7f064c028010. after alignment, vector=0x7f064c029000
+00000000000i[MEM0 ] allocated memory at 0x7f4114e95010. after alignment, vector=0x7f4114e96000
 00000000000i[MEM0 ] 4.00MB
 00000000000i[MEM0 ] mem block size = 0x00100000, blocks=4
 00000000000i[MEM0 ] rom at 0xfffe0000/131072 ('/home/ugrads/stolle09/cis520/usr/local/share/bochs/BIOS-bochs-latest')
@@ -54,7 +54,7 @@
 00000000000i[     ] init_dev of 'keyboard' plugin device by virtual method
 00000000000i[KBD  ] will paste characters every 1000 keyboard ticks
 00000000000i[     ] init_dev of 'harddrv' plugin device by virtual method
-00000000000i[HD   ] HD on ata0-0: '/tmp/Ad627VRvqp.dsk' 'flat' mode 
+00000000000i[HD   ] HD on ata0-0: '/tmp/nhx7Xdiprw.dsk' 'flat' mode 
 00000000000i[HD   ] Using boot sequence disk, none, none
 00000000000i[HD   ] Floppy boot signature check is enabled
 00000000000i[     ] init_dev of 'serial' plugin device by virtual method
@@ -95,34 +95,6 @@
 00000000000i[GDBST] addr fff0 len 1
 00000000000i[GDBST] addr fff0 len 8
 00000000000i[GDBST] addr fff0 len 7
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len e
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len e
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len e
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len e
-00000000000i[GDBST] addr c0022c16 len 1
-00000000000i[GDBST] addr c0022c16 len 1
 00000000000p[     ] >>PANIC<< SIGNAL 2 caught
 00000000000i[CPU0 ] CPU is in real mode (active)
 00000000000i[CPU0 ] CS.d_b = 16 bit
