@@ -50,12 +50,7 @@ void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
 
-void bump_priority(struct thread* t,int old_priority,int new_priority);
-bool cond_priority_compare (const struct list_elem* one,const struct list_elem* two, void* aux);
-bool holder_priority_compare (const struct list_elem* one, const struct list_elem* two, void* aux);
-void holding_insert(struct list* list,struct thread* t);
-void holding_remove(struct list* list,struct thread* t);
-void adjust_order(struct list_elem* elem,list_less_func* order_by);
+bool cond_priority_compare (struct list_elem* one, struct list_elem* two, void* aux);
 
 /* Optimization barrier.
 

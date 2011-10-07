@@ -261,7 +261,7 @@ thread_unblock (struct thread *t)
   if (t != idle_thread)
 	{
 		is_idle++;
-		list_insert_ordered(&ready_list, &t->elem, &thread_priority_compare, NULL);
+		insert_ready(t);
 	}
   t->status = THREAD_READY;
 
@@ -318,10 +318,7 @@ thread_priority_compare (const struct list_elem* one,const struct list_elem* two
   struct thread *t_two = list_entry (two, struct thread, elem);
   return t_one->priority > t_two->priority;
 }
-void insert_ready(struct list_elem* elem)
-{
-	list_insert_ordered (&ready_list, elem, &thread_priority_compare, NULL);
-}
+
 
 /* Returns the name of the running thread. */
 const char *
@@ -392,7 +389,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_insert_ordered (&ready_list, &cur->elem, &thread_priority_compare, NULL);
+    insert_ready (cur);
 //    list_push_back (&ready_list, &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
@@ -420,7 +417,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  thread_current ()->base_priority = new_priority;
+	if (!thread_current()->in_donation)
+		thread_current()->priority = new_priority;
+	
 	thread_yield_to_higher_priority();
 }
 
@@ -543,6 +543,11 @@ init_thread (struct thread *t, const char *name, int priority)
 
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
+	
+	t->in_donation = 0;
+	t->waiting_on = NULL;
+	t->base_priority = priority;
+	
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
@@ -670,3 +675,8 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+void insert_ready(struct thread* t)
+{
+	list_insert_ordered (&ready_list, &t->elem, &thread_priority_compare, NULL);
+}

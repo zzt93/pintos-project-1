@@ -36,6 +36,8 @@ static int assert_count = 2;
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+#define NOT_IMPLEMENTED 0
+
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
  nonnegative integer along with two atomic operators for
  manipulating it:
@@ -52,8 +54,6 @@ sema_init (struct semaphore *sema, unsigned value)
 	
   sema->value = value;
   list_init (&sema->waiters);
-	//sema->holding = NULL;
-	list_init (&sema->holders);
 }
 
 /* Down or "P" operation on a semaphore.  Waits for SEMA's value
@@ -74,33 +74,8 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   if (sema->value == 0) 
 	{
-			list_insert_ordered(&sema->waiters,&thread_current()->elem,&thread_priority_compare,NULL);
-		struct thread* t = NULL;//list_entry(list_begin(&sema->holders),struct holder,elem)->t;//list_entry(list_begin(&sema->holders),struct thread,holder);
-		
-		int old_priority = 64;//if (t != NULL) old_priority = t->priority;
-		int cur_priority = thread_current()->priority;
-		if (old_priority < cur_priority) bump_priority(t,old_priority,cur_priority);
-		/*{
-			t->priority = cur_priority;
-			
-			if (t->status == THREAD_BLOCKED)
-			{
-				ASSERT(0);
-			}
-			else// if (&t->elem != NULL && t->elem.prev != NULL && t->elem.next != NULL)
-			{
-				adjust_order(&t->elem,&thread_priority_compare);
-			}
-			
-			thread_block ();
-			
-			t->priority = old_priority;
-		}*/
-		else
-		{
-			thread_block ();
-		}
-		
+		list_insert_ordered(&sema->waiters,&thread_current()->elem,&thread_priority_compare,NULL);
+		thread_block ();
 	}
 	
 	//if (sema->holding == NULL) sema->holding = thread_current();
@@ -113,20 +88,7 @@ sema_down (struct semaphore *sema)
   intr_set_level (old_level);
 }
 
-void bump_priority(struct thread* t,int old_priority,int new_priority)
-{
-	ASSERT(NOT_IMPLEMENTED);
-	t->priority = new_priority;
-	adjust_order(&t->elem,&thread_priority_compare);
-	thread_block ();
-	t->priority = old_priority;
-}
 
-
-/*void nestedDonation(struct thread* t)
- {
- 
- }*/
 /* Down or "P" operation on a semaphore, but only if the
  semaphore is not already 0.  Returns true if the semaphore is
  decremented, false otherwise.
@@ -249,13 +211,68 @@ lock_init (struct lock *lock)
 void
 lock_acquire (struct lock *lock)
 {
-	ASSERT (lock != NULL);
-	ASSERT (!intr_context ());
-	ASSERT (!lock_held_by_current_thread (lock));
+  ASSERT (lock != NULL);
+  ASSERT (!intr_context ());
+  ASSERT (!lock_held_by_current_thread (lock));
 	
-	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
+	//enum intr_level old_level = intr_disable();//disable,record interrupts
+	if (lock->holder != NULL)//is the lock taken?
+	{
+		if (lock->holder->priority < thread_current()->priority)//do we need to donate?
+		{
+			int prev_priority = lock->holder->priority;//store previous priority of holder;
+			lock->holder->priority = thread_current()->priority;//donate priority
+			lock->holder->in_donation++;//tell the thread it's in donation
+			
+			if (lock->holder->waiting_on != NULL)//is the holding thread is waiting? or status == BLOCKED
+			{
+				ASSERT(NOT_IMPLEMENTED);
+				//worry about blocked donation later
+			}ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list
+			
+			list_remove(&lock->holder->elem);//remove from ready list
+			insert_ready(lock->holder);//add to ready list
+			
+			thread_current()->waiting_on = lock->holder;
+			sema_down (&lock->semaphore);
+			ASSERT(lock->holder == NULL);
+			
+			thread_current()->waiting_on->in_donation--;
+			
+			
+			if (thread_current()->waiting_on->base_priority > prev_priority || !thread_current()->waiting_on->in_donation)//!2?
+				thread_current()->waiting_on->priority = thread_current()->waiting_on->base_priority;
+			else
+				thread_current()->waiting_on->priority = prev_priority;//reset priority to holder
+			
+			thread_current()->waiting_on = NULL;
+		}
+		else
+		{
+			thread_current()->waiting_on = lock->holder;
+			sema_down(&lock->semaphore);
+			thread_current()->waiting_on = NULL;
+		}
+	}
+	else sema_down(&lock->semaphore);
+	
+  lock->holder = thread_current ();
+	ASSERT(lock_held_by_current_thread(lock));
+	
+	//intr_set_level(old_level);
 }
+/* CLEAN COPY
+ void
+ lock_acquire (struct lock *lock)
+ {
+ ASSERT (lock != NULL);
+ ASSERT (!intr_context ());
+ ASSERT (!lock_held_by_current_thread (lock));
+ 
+ sema_down (&lock->semaphore);
+ lock->holder = thread_current ();
+ }
+ END	*/
 
 /* Tries to acquires LOCK and returns true if successful or false
  on failure.  The lock must not already be held by the current
@@ -408,61 +425,4 @@ bool holder_priority_compare (const struct list_elem* one, const struct list_ele
 	struct holder *h_one = list_entry (one, struct holder, elem);
 	struct holder *h_two = list_entry (two, struct holder, elem);
 	return h_one->t->priority > h_two->t->priority;
-}
-void holding_insert(struct list* list,struct thread* t)
-{
-	ASSERT(t!=NULL);
-	static struct holder h;
-	h.t = t;
-	ASSERT(assert_count);
-	list_insert_ordered(list,&h.elem,&holder_priority_compare,NULL);
-	verifyList(list);
-}
-void holding_remove(struct list* list,struct thread* t)
-{
-	struct list_elem* elem = list_begin(list);
-	
-	while (elem->next != NULL) {
-		if (list_entry(elem,struct holder,elem)->t == t)
-		{
-			list_remove(elem);
-			break;
-		}
-		else
-			elem = elem->next;
-	}
-	verifyList(list);
-	//ASSERT(elem!=elem->next && ((elem->prev==NULL && elem->next==NULL) || (elem!=elem->prev && elem->prev!=elem->next)));
-}
-
-void verifyList(struct list* list)
-{
-	struct list_elem* elem = list_begin(list);
-	while (elem->next != NULL) {
-		ASSERT(elem != elem->next);
-		ASSERT(elem != elem->prev);
-		ASSERT(elem->prev != elem->next);
-		ASSERT(elem->prev != NULL);
-		ASSERT(elem->next != NULL);
-		elem = elem->next;
-	}
-}
-
-void adjust_order(struct list_elem* elem,list_less_func* order_by)
-{
-	if (elem->prev != NULL)
-	{
-		struct list_elem *e;
-		
-		for (e = elem->prev; e->prev != NULL; e = e->prev)
-			if (!order_by (elem, e, NULL))
-				break;
-			else
-			{
-				e->next = elem->next;
-				elem->next = e;
-				elem->prev = e->prev;
-				e->prev = elem;
-			}
-	}
 }
