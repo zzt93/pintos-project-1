@@ -108,9 +108,7 @@ thread_start (void)
   /* Create the idle thread. */
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
-	//print_ready_list();
   thread_create ("idle", PRI_MIN, idle, &idle_started);
-	//print_ready_list();
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -223,8 +221,6 @@ thread_create (const char *name, int priority,
 void
 thread_block (void) 
 {
-	//printf("Blocking %s\n",thread_current()->name);
-	//print_ready_list();
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
 
@@ -276,7 +272,6 @@ thread_yield_to_higher_priority(void)
     struct thread *max = list_entry (list_begin (&ready_list), struct thread, elem);
     if(max->priority > cur->priority || (cur->in_donation && cur->priority == max->priority))
     {
-			//printf("Current %s has %d\t Max %s has %d\n",cur->name,cur->priority,max->name,max->priority);
       if(intr_context())
         intr_yield_on_return();
       else
@@ -351,7 +346,6 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-	//printf("%s exiting\n",thread_current()->name);
 #ifdef USERPROG
   process_exit ();
 #endif
@@ -371,8 +365,6 @@ thread_exit (void)
 void
 thread_yield (void) 
 {
-	//printf("Current: %s\t365\n",thread_current()->name);
-	//print_ready_list();
   struct thread *cur = thread_current ();
   enum intr_level old_level;
   
@@ -381,7 +373,6 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread) 
     insert_ready (cur);
-//    list_push_back (&ready_list, &cur->elem);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -543,7 +534,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-  sema_init(&(t->sem), 0);
   t->wakeup_time = -1;
   list_push_back (&all_list, &t->allelem);
 }
@@ -620,8 +610,6 @@ thread_schedule_tail (struct thread *prev)
       palloc_free_page (prev);
     }
 	
-	//printf("Current: %s\t604\n",cur->name);
-	//print_ready_list();
 }
 
 /* Schedules a new process.  At entry, interrupts must be off and
@@ -638,7 +626,6 @@ schedule (void)
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
 	
-	//printf("Current: %s\t Next: %s",cur->name,next->name);
 
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);

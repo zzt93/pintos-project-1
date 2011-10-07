@@ -27,7 +27,6 @@ void timer_ndelay (int64_t nanoseconds);
 
 void timer_print_stats (void);
 
-void threadFunction(struct thread*, void*);
 void insert_sleep (struct list_elem* elem);
 bool thread_wake_order (const struct list_elem* one,const struct list_elem* two,void* aux);
 
