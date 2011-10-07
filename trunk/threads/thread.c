@@ -399,10 +399,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->base_priority = new_priority;
+	enum intr_level old_level = intr_disable();  
+	thread_current ()->base_priority = new_priority;
 	if (!thread_current()->in_donation)
 		thread_current()->priority = new_priority;
-	
+	intr_set_level(old_level);
 	thread_yield_to_higher_priority();
 }
 
