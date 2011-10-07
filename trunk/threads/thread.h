@@ -98,6 +98,7 @@ struct thread
 		int in_donation;
 		int base_priority;
 		struct thread* waiting_on;
+		struct lock* waiting_on_lock;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

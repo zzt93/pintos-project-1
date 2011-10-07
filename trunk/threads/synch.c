@@ -213,39 +213,7 @@ lock_acquire (struct lock *lock)
 	{
 		if (lock->holder->priority < cur->priority)//do we need to donate?
 		{
-			if (lock->prev_priority == 0) lock->prev_priority = lock->holder->priority;
-			//store previous priority of holder;
-			lock->holder->priority = cur->priority;//donate priority
-			lock->holder->in_donation++;//tell the thread it's in donation
-			
-			if (lock->holder->status == THREAD_BLOCKED)//is the holding thread is waiting? or status == BLOCKED
-			{
-				ASSERT(NOT_IMPLEMENTED);
-				//worry about blocked donation later
-			}ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list
-			
-			
-			//adjust_order(&lock->holder->elem,&thread_priority_compare);
-			list_remove(&lock->holder->elem);//remove from ready list
-			insert_ready(lock->holder);//add to ready list
-			
-			cur->waiting_on = lock->holder;
-			sema_down (&lock->semaphore);
-			ASSERT(lock->holder == NULL);
-			
-			cur->waiting_on->in_donation--;
-			
-			cur->waiting_on->priority = MAX((!!cur->waiting_on->in_donation)*lock->prev_priority,
-																			cur->waiting_on->base_priority);
-			
-			if (cur->waiting_on->status == THREAD_READY)
-			{
-				//adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
-				list_remove(&cur->waiting_on->elem);//remove from ready list
-				insert_ready(cur->waiting_on);//add to ready list
-			}
-			
-			cur->waiting_on = NULL;
+			donate_recursive(lock);
 		}
 		else
 		{
@@ -262,6 +230,49 @@ lock_acquire (struct lock *lock)
 	
 	intr_set_level(old_level);
 }
+
+void donate_recursive(struct lock *lock)
+{
+	struct thread* cur = thread_current();	
+
+	if (lock->prev_priority == 0) lock->prev_priority = lock->holder->priority;
+	
+	//store previous priority of holder;
+	lock->holder->priority = cur->priority;//donate priority
+	lock->holder->in_donation++;//tell the thread it's in donation
+	
+	//is the holding thread is waiting? or status == BLOCKED
+	if (lock->holder->status == THREAD_BLOCKED && (lock->holder->waiting_on_lock != NULL))	
+	{
+		donate_recursive(lock->holder->waiting_on_lock);
+		//waiting_on_lock is the lock the holder thread is waiting on
+	}
+	ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list	
+	
+	//adjust_order(&lock->holder->elem,&thread_priority_compare);
+	list_remove(&lock->holder->elem);//remove from ready list
+	insert_ready(lock->holder);//add to ready list
+	
+	cur->waiting_on = lock->holder;
+	cur->waiting_on_lock = lock;
+	sema_down (&lock->semaphore);
+	ASSERT(lock->holder == NULL);
+	
+	cur->waiting_on->in_donation--;
+	
+	cur->waiting_on->priority = MAX((!!cur->waiting_on->in_donation)*lock->prev_priority,
+					cur->waiting_on->base_priority);
+	
+	if (cur->waiting_on->status == THREAD_READY)
+	{
+		//adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
+		list_remove(&cur->waiting_on->elem);//remove from ready list
+		insert_ready(cur->waiting_on);//add to ready list
+	}
+	
+	cur->waiting_on = NULL;
+}
+
 /* CLEAN COPY
  void
  lock_acquire (struct lock *lock)
