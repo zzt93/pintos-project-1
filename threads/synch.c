@@ -247,11 +247,11 @@ void donate_recursive(struct lock *lock)
 		donate_recursive(lock->holder->waiting_on_lock);
 		//waiting_on_lock is the lock the holder thread is waiting on
 	}
-	ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list	
+	//ASSERT(lock->holder->status == THREAD_READY);//INVARIANT:: holder is on the ready list	
 	
-	//adjust_order(&lock->holder->elem,&thread_priority_compare);
-	list_remove(&lock->holder->elem);//remove from ready list
-	insert_ready(lock->holder);//add to ready list
+	adjust_order(&lock->holder->elem,&thread_priority_compare);
+	//list_remove(&lock->holder->elem);//remove from ready list
+	//insert_ready(lock->holder);//add to ready list
 	
 	cur->waiting_on = lock->holder;
 	cur->waiting_on_lock = lock;
@@ -265,9 +265,9 @@ void donate_recursive(struct lock *lock)
 	
 	if (cur->waiting_on->status == THREAD_READY)
 	{
-		//adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
-		list_remove(&cur->waiting_on->elem);//remove from ready list
-		insert_ready(cur->waiting_on);//add to ready list
+		adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
+		//list_remove(&cur->waiting_on->elem);//remove from ready list
+		//insert_ready(cur->waiting_on);//add to ready list
 	}
 	
 	cur->waiting_on = NULL;
@@ -454,6 +454,10 @@ void bump_forward(struct list_elem* elem)
 	elem->prev = prev->prev;
 	prev->prev = elem;
 	elem->next = prev;
+
+	elem->prev->next = elem;
+	prev->next->prev = prev;
+	
 }
 void bump_back(struct list_elem* elem)
 {
@@ -462,4 +466,7 @@ void bump_back(struct list_elem* elem)
 	elem->next = next->next;
 	next->next = elem;
 	elem->prev = next;
+
+	elem->next->prev = elem;
+	next->prev->next = next;	
 }
