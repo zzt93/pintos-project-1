@@ -37,11 +37,14 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-
+  
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  if (tid == TID_ERROR)
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, argvc);
+  if (tid == TID_ERROR) {
     palloc_free_page (fn_copy); 
+    free(argvc->v);
+    free(argvc);
+  }
   return tid;
 }
 
@@ -50,7 +53,28 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  char *file_name = file_name_;
+  char *fn_copy;
+  fn_copy = palloc_get_page (0);
+  if (fn_copy == NULL)
+    return TID_ERROR;
+  strlcpy (fn_copy, *file_name_, PGSIZE);  
+
+  // struct argvc *argvc = malloc(sizeof(struct argvc));
+  int c = get_count();
+  char** v = malloc(sizeof(char*)*c);
+  
+  char *token, *save_ptr;
+  int i = 0;
+  for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL;
+       token = strtok_r (NULL, " ", &save_ptr))
+  {
+     v[i] = malloc(sizeof(char)*strlen(token));
+     strlcpy(token, v[i], strlen(token));
+     i++;
+  }
+  
+  char *file_name = v[0];
+
   struct intr_frame if_;
   bool success;
 
@@ -61,11 +85,22 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
 
-  /* If load failed, quit. */
-  palloc_free_page (file_name);
-  if (!success) 
-    thread_exit ();
+  int i = s->c;
+  for(i = s->c-1; i > 0; i--) //
+  {
+    // PUSH v[i]
+    asm volatile ("");
+  }
 
+  free(v);
+
+  /* If load failed, quit. */
+  palloc_free_page (file_name_);
+  if (!success)
+  {
+    thread_exit ();
+  }
+  
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -437,7 +472,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE - 12;
       else
         palloc_free_page (kpage);
     }
