@@ -217,7 +217,7 @@ lock_acquire (struct lock *lock)
 	else sema_down(&lock->semaphore);
 	
   lock->holder = cur;
-	lock->prev_priority = 0;
+	lock->prev_priority = -1;
 	ASSERT(lock_held_by_current_thread(lock));
 	
 	intr_set_level(old_level);
@@ -227,7 +227,7 @@ void donate_recursive(struct lock *lock)
 {
 	struct thread* cur = thread_current();	
 
-	if (lock->prev_priority == 0) lock->prev_priority = lock->holder->priority;
+	if (lock->prev_priority == -1) lock->prev_priority = lock->holder->priority;
 	
 	//store previous priority of holder;
 	lock->holder->priority = cur->priority;//donate priority
@@ -252,10 +252,9 @@ void donate_recursive(struct lock *lock)
 	cur->waiting_on->priority = MAX((!!cur->waiting_on->in_donation)*lock->prev_priority,
 					cur->waiting_on->base_priority);
 	
-	if (cur->waiting_on->status == THREAD_READY)
-	{
-		adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
-	}
+	
+	adjust_order(&cur->waiting_on->elem,&thread_priority_compare);
+	
 	
 	cur->waiting_on = NULL;
 }
