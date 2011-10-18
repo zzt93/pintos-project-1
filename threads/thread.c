@@ -281,6 +281,17 @@ thread_yield_to_higher_priority(void)
   intr_set_level(old_level);
 }
 
+struct thread* thread_by_tid(tid_t tid)
+{
+  struct list_elem *e;
+  for(e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e))
+  {
+    struct thread *t = list_entry(e, struct thread, allelem);
+    if(t->tid == tid) return t;
+  }
+  return NULL;
+}
+
 void
 print_ready_list(void)
 {
@@ -345,7 +356,7 @@ void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
-
+  sema_up(&(thread_current()->wait_for));
 #ifdef USERPROG
   process_exit ();
 #endif
@@ -444,7 +455,7 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
-
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -488,12 +499,12 @@ static void
 kernel_thread (thread_func *function, void *aux) 
 {
   ASSERT (function != NULL);
-
+  printf("here.......\n");
   intr_enable ();       /* The scheduler runs with interrupts off. */
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -530,6 +541,8 @@ init_thread (struct thread *t, const char *name, int priority)
 	t->in_donation = 0;
 	t->waiting_on = NULL;
 	t->base_priority = priority;
+
+  sema_init(&(t->wait_for), 0);
 	
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;

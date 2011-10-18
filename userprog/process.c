@@ -45,6 +45,19 @@ process_execute (const char *file_name)
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   printf("tid is %d\n", tid);
+
+  /*struct thread *t = thread_by_tid(tid);
+  while(t->status != THREAD_RUNNING)
+  {
+    thread_unblock(t);
+  }
+  start_process(fn_copy);*/
+
+  struct thread* t = thread_by_tid(tid);
+  printf("thread is %s\n", t->name);
+  
+  sema_down(&(t->wait_for));
+  printf("the wait is over\n");
   
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -55,7 +68,7 @@ process_execute (const char *file_name)
 int get_count(char* s)
 {
 
-  char* news = malloc(sizeof(char)*strlen(s));
+  char* news = malloc(sizeof(char)*(strlen(s)+1));
   strlcpy(news, s, strlen(s));
   char *token, *save_ptr;
   int i = 0;
@@ -95,13 +108,14 @@ start_process (void *file_name_)
        token = strtok_r (NULL, " ", &save_ptr))
   {
      v[i] = malloc(sizeof(char)*strlen(token));
-     strlcpy(token, v[i], strlen(token));
+     strlcpy(v[i], token, strlen(token)+1);
      printf("token found[%d]: %s\n", i, token);
      i++;
   }
   printf("end tokens\n");
   
   char *file_name = v[0];
+  printf("file_name is %s\n", file_name);
 
   struct intr_frame if_;
   bool success;
@@ -113,28 +127,42 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
   printf("success: %d\n", success);
+
+  //if_.esp -= 4 - (file_name_len + 1) % 4; /* alignment */
+  if_.esp -= 4;
+  *(int *)(if_.esp) = 0; /* argv[argc] == 0 */
+  /* Now pushing argv[x], and this is where the fun begins */
+  for (i = c - 1; i >= 0; i--)
+  {
+    if_.esp -= 4;
+    *(void **)(if_.esp) = v[i]; /* argv[x] */
+  }
+
+  if_.esp -= 4;
+  *(char **)(if_.esp) = (if_.esp + 4); /* argv */
+  if_.esp -= 4;
+  *(int *)(if_.esp) = c;
+  if_.esp -= 4;
+  *(int *)(if_.esp) = 0; // fake return address
   
+
+/*
   asm volatile ("pushl $0":::"memory");
   printf("push 0\n");
 
-  for(i = c-1; i > 0; i--) //put the file name on stack?
+  for(i = c-1; i >= 0; i--)
   {
     // PUSH v[i]
     asm volatile ("pushl %[arg]"::[arg] "m" (v[i]):"memory");
     printf("push %s\n", v[i]);
   }
-  //int number = 4;
-  //asm volatile ("addl %%esp, %[arg]; pushl %[arg]":"=r" (number):[arg] "i" (number):"memory");
-
 
   asm volatile ("movl $4, %%eax; addl %%esp, %%eax; pushl %%eax":::"%eax");
   printf("push es+4\n");
   
-  int numArgs = c-1;
-  asm volatile ("pushl %[arg]"::[arg] "m" (numArgs):"memory");
-  printf("push c: %d\n", numArgs);
+  asm volatile ("pushl %[arg]"::[arg] "m" (c):"memory");
+  printf("push c: %d\n", c); */
   
-  free(v[0]); //File name
   free(v); //array of pointers to arguments
 
   /* If load failed, quit. */
@@ -517,7 +545,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE - 12;
+        *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }

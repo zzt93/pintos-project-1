@@ -99,6 +99,8 @@ struct thread
 		struct thread* waiting_on;
 		struct lock* waiting_on_lock;
 
+    struct semaphore wait_for;
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -131,6 +133,8 @@ const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
+
+struct thread* thread_by_tid(tid_t tid);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
