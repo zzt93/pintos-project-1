@@ -46,13 +46,6 @@ process_execute (const char *file_name)
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   printf("tid is %d\n", tid);
 
-  /*struct thread *t = thread_by_tid(tid);
-  while(t->status != THREAD_RUNNING)
-  {
-    thread_unblock(t);
-  }
-  start_process(fn_copy);*/
-
   struct thread* t = thread_by_tid(tid);
   printf("thread is %s\n", t->name);
   
@@ -61,6 +54,8 @@ process_execute (const char *file_name)
   
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+
+  printf("%s: exit(%d)", t->name, 0); /// I think the exit code will be EAX on the stack
   return tid;
 }
 
