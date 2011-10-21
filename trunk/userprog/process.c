@@ -49,13 +49,12 @@ process_execute (const char *file_name)
   struct thread* t = thread_by_tid(tid);
   printf("thread is %s\n", t->name);
   
-  sema_down(&(t->wait_for));
+  sema_down(&(t->wait_for)); //TODO: wait for load only!!
   printf("the wait is over\n");
   
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
 
-  printf("%s: exit(%d)", t->name, 0); /// I think the exit code will be EAX on the stack
   return tid;
 }
 
