@@ -1,15 +1,29 @@
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
+#include "lib/stdint.h"
+
+typedef int pid_t;
+
 void syscall_init (void);
 
-void halt(void);
-void exit(int status);
-id_t exec(const char *cmd_line);
-int wait(pid_t pid);
-bool create(const* file, unsigned initial_size);
-bool remove(const char*file);
-int open(const char *file);
+void sys_halt(void);
+void sys_exit(int status);
+pid_t sys_exec(const char *cmd_line);
+int sys_wait(pid_t pid);
+int sys_filesize(int fd);
+
+int sys_create(const char* file, unsigned initial_size);
+int sys_remove(const char* file);
+int sys_open(const char *file);
+
+int sys_read(int fd, void *buffer, unsigned size);
+int sys_write(int fd, void *buffer, unsigned size);
+void sys_seek(int fd, unsigned position);
+unsigned sys_tell(int fd);
+void sys_close(int fd);
+
+int copy_in (uint8_t* dest, uint8_t* src, uint8_t size);
 
 struct lock fs_lock;
 
