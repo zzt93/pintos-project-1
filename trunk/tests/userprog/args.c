@@ -12,18 +12,13 @@ main (int argc, char *argv[])
 
   test_name = "args";
 
-  //msg ("begin");
-  printf("begin\n");
-  //msg ("argc = %d", argc);
-  printf("argc = %d\n", argc);
+  msg ("begin");
+  msg ("argc = %d", argc);
   for (i = 0; i <= argc; i++)
     if (argv[i] != NULL)
-      printf("argv[%d] = '%s'\n", i, argv[i]);
-      //msg ("argv[%d] = '%s'", i, argv[i]);
+      msg ("argv[%d] = '%s'", i, argv[i]);
     else
-      printf("argv[%d] = null\n", i);
-     // msg ("argv[%d] = null", i);
-  //msg ("end");
-  printf("end\n");
+      msg ("argv[%d] = null", i);
+  msg ("end");
   return 0;
 }
