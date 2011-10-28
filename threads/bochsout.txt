@@ -29,7 +29,7 @@
 00000000000i[     ]   SB16 support: no
 00000000000i[     ]   USB support: no
 00000000000i[     ]   VGA extension support: vbe 
-00000000000i[MEM0 ] allocated memory at 0x7fc464be6010. after alignment, vector=0x7fc464be7000
+00000000000i[MEM0 ] allocated memory at 0x7f74efc11010. after alignment, vector=0x7f74efc12000
 00000000000i[MEM0 ] 4.00MB
 00000000000i[MEM0 ] mem block size = 0x00100000, blocks=4
 00000000000i[MEM0 ] rom at 0xfffe0000/131072 ('/home/ugrads/andrew08/cis520/usr/local/share/bochs/BIOS-bochs-latest')
@@ -40,12 +40,14 @@
 00000000000i[DMA  ] channel 2 used by Floppy Drive
 00000000000i[VGA  ] interval=50000
 00000000000i[MEM0 ] Register memory access handlers: 0x000a0000 - 0x000bffff
+00000000000i[XGUI ] test_alloc_colors: 16 colors available out of 16 colors tried
+00000000000i[XGUI ] font 8 wide x 16 high, display depth = 24
 00000000000i[MEM0 ] Register memory access handlers: 0xe0000000 - 0xe0ffffff
 00000000000i[VGA  ] VBE Bochs Display Extension Enabled
 00000000000i[     ] init_dev of 'unmapped' plugin device by virtual method
 00000000000i[     ] init_dev of 'biosdev' plugin device by virtual method
 00000000000i[     ] init_dev of 'speaker' plugin device by virtual method
-00000000000i[SPEAK] Failed to open /dev/console: Permission denied
+00000000000i[SPEAK] Failed to open /dev/console: Resource temporarily unavailable
 00000000000i[SPEAK] Deactivating beep on console
 00000000000i[     ] init_dev of 'extfpuirq' plugin device by virtual method
 00000000000i[     ] init_dev of 'ioapic' plugin device by virtual method
@@ -54,7 +56,7 @@
 00000000000i[     ] init_dev of 'keyboard' plugin device by virtual method
 00000000000i[KBD  ] will paste characters every 1000 keyboard ticks
 00000000000i[     ] init_dev of 'harddrv' plugin device by virtual method
-00000000000i[HD   ] HD on ata0-0: '/tmp/8XJw5GbVNY.dsk' 'flat' mode 
+00000000000i[HD   ] HD on ata0-0: '/tmp/J_uefxvP5U.dsk' 'flat' mode 
 00000000000i[HD   ] Using boot sequence disk, none, none
 00000000000i[HD   ] Floppy boot signature check is enabled
 00000000000i[     ] init_dev of 'serial' plugin device by virtual method
@@ -92,42 +94,44 @@
 00000000000i[     ] reset of 'harddrv' plugin device by virtual method
 00000000000i[     ] reset of 'serial' plugin device by virtual method
 00000000000i[     ] reset of 'parallel' plugin device by virtual method
+00000000000i[XGUI ] [x] Mouse off
 00000003305i[BIOS ] $Revision: 1.247 $ $Date: 2010/04/04 19:33:50 $
-00000316560i[KBD  ] reset-disable command received
-00000441798i[VBIOS] VGABios $Id: vgabios.c,v 1.69 2009/04/07 18:18:20 vruppert Exp $
-00000441869i[VGA  ] VBE known Display Interface b0c0
-00000441901i[VGA  ] VBE known Display Interface b0c5
-00000444826i[VBIOS] VBE Bios $Id: vbe.c,v 1.62 2009/01/25 15:46:25 vruppert Exp $
-00000757515i[BIOS ] Starting rombios32
-00000758012i[BIOS ] Shutdown flag 0
-00000758680i[BIOS ] ram_size=0x00400000
-00000759131i[BIOS ] ram_end=4MB
-00000770135i[BIOS ] Found 1 cpu(s)
-00000789404i[BIOS ] bios_table_addr: 0x000fbc18 end=0x000fcc00
-00000802081i[BIOS ] bios_table_cur_addr: 0x000fbc18
-00000814248i[BIOS ] ata0-0: PCHS=1/16/63 translation=none LCHS=1/16/63
-00004695695i[BIOS ] IDE time out
-00007718729i[BIOS ] Booting from 0000:7c00
-00024965097p[UNMP ] >>PANIC<< Shutdown port: shutdown requested
-00024965097i[CPU0 ] CPU is in protected mode (active)
-00024965097i[CPU0 ] CS.d_b = 32 bit
-00024965097i[CPU0 ] SS.d_b = 32 bit
-00024965097i[CPU0 ] | EAX=0000006e  EBX=c002d1f4  ECX=c000ef7e  EDX=ffff8900
-00024965097i[CPU0 ] | ESP=c000ef60  EBP=c000ef88  ESI=c002f9dd  EDI=c000ef80
-00024965097i[CPU0 ] | IOPL=0 id vip vif ac vm rf nt of df IF tf sf zf af pf cf
-00024965097i[CPU0 ] | SEG selector     base    limit G D
-00024965097i[CPU0 ] | SEG sltr(index|ti|rpl)     base    limit G D
-00024965097i[CPU0 ] |  CS:0008( 0001| 0|  0) 00000000 ffffffff 1 1
-00024965097i[CPU0 ] |  DS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-00024965097i[CPU0 ] |  SS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-00024965097i[CPU0 ] |  ES:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-00024965097i[CPU0 ] |  FS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-00024965097i[CPU0 ] |  GS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
-00024965097i[CPU0 ] | EIP=c002617e (c002617d)
-00024965097i[CPU0 ] | CR0=0xe0010015 CR2=0x00000000
-00024965097i[CPU0 ] | CR3=0x00101000 CR4=0x00000000
-00024965097i[CPU0 ] 0xc002617d>> out dx, al : EE
-00024965097i[CMOS ] Last time is 24 (Wed Dec 31 18:00:24 1969)
-00024965097i[NGUI ] bx_nogui_gui_c::exit() not implemented yet.
-00024965097i[     ] restoring default signal behavior
-00024965097i[CTRL ] quit_sim called with exit code 1
+00000361795i[KBD  ] reset-disable command received
+00000487033i[VBIOS] VGABios $Id: vgabios.c,v 1.69 2009/04/07 18:18:20 vruppert Exp $
+00000487104i[VGA  ] VBE known Display Interface b0c0
+00000487136i[VGA  ] VBE known Display Interface b0c5
+00000490061i[VBIOS] VBE Bios $Id: vbe.c,v 1.62 2009/01/25 15:46:25 vruppert Exp $
+00000550000i[XGUI ] charmap update. Font Height is 16
+00000802750i[BIOS ] Starting rombios32
+00000803247i[BIOS ] Shutdown flag 0
+00000803915i[BIOS ] ram_size=0x00400000
+00000804366i[BIOS ] ram_end=4MB
+00000815406i[BIOS ] Found 1 cpu(s)
+00000834675i[BIOS ] bios_table_addr: 0x000fbc18 end=0x000fcc00
+00000847352i[BIOS ] bios_table_cur_addr: 0x000fbc18
+00000859519i[BIOS ] ata0-0: PCHS=1/16/63 translation=none LCHS=1/16/63
+00004740966i[BIOS ] IDE time out
+00007773654i[BIOS ] Booting from 0000:7c00
+00412185000p[XGUI ] >>PANIC<< POWER button turned off.
+00412185000i[CPU0 ] CPU is in protected mode (halted)
+00412185000i[CPU0 ] CS.d_b = 32 bit
+00412185000i[CPU0 ] SS.d_b = 32 bit
+00412185000i[CPU0 ] | EAX=00000000  EBX=c00211a3  ECX=c0103000  EDX=c0103000
+00412185000i[CPU0 ] | ESP=c0103fa8  EBP=c0103fc0  ESI=00000000  EDI=00000000
+00412185000i[CPU0 ] | IOPL=0 id vip vif ac vm rf nt of df IF tf SF zf af pf cf
+00412185000i[CPU0 ] | SEG selector     base    limit G D
+00412185000i[CPU0 ] | SEG sltr(index|ti|rpl)     base    limit G D
+00412185000i[CPU0 ] |  CS:0008( 0001| 0|  0) 00000000 ffffffff 1 1
+00412185000i[CPU0 ] |  DS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00412185000i[CPU0 ] |  SS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00412185000i[CPU0 ] |  ES:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00412185000i[CPU0 ] |  FS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00412185000i[CPU0 ] |  GS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+00412185000i[CPU0 ] | EIP=c00211ca (c00211ca)
+00412185000i[CPU0 ] | CR0=0xe0010015 CR2=0x00000000
+00412185000i[CPU0 ] | CR3=0x00101000 CR4=0x00000000
+00412185000i[CPU0 ] 0xc00211ca>> jmp .-14 (0xc00211be) : EBF2
+00412185000i[CMOS ] Last time is 412 (Wed Dec 31 18:06:52 1969)
+00412185000i[XGUI ] Exit
+00412185000i[     ] restoring default signal behavior
+00412185000i[CTRL ] quit_sim called with exit code 1

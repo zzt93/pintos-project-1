@@ -19,6 +19,10 @@ syscall_handler (struct intr_frame *f UNUSED)
   lock_acquire(&fs_lock);
   printf("entering syscalls.....\n");
 
+  //int q;
+  //for(q = 19; q >= 0; q--)
+  //  printf("q is %d: \t%d\n", (((int*)f->esp) + q), (int)*(((int*)f->esp) + q));
+
   typedef int syscall_function (int, int, int);
 
   struct syscall
@@ -59,7 +63,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   copy_in (args, (uint32_t *) f->esp + 1, sizeof *args * sc->arg_cnt);
   
   printf ("system call: %d\n", call_nr);
-  printf ("arguments are %d, %d, %d\n", (int)args[0], (int)args[1], (int)args[2]);
+  printf ("arguments are %u, %u, %u\n", (unsigned)args[0], (unsigned)args[1], (unsigned)args[2]);
 
   f->eax = sc->func (args[0], args[1], args[2]);
 
@@ -86,9 +90,20 @@ put_user (uint8_t *udst, uint8_t byte)
   return eax != 0;
 }
 
+int copy_in (uint8_t* dest, uint8_t* src, uint8_t size)
+{
+  uint8_t i = 0;
+  for(; i < size; i++)
+  {
+    if(!get_user(dest+i, src+i))
+	return 0;
+  }
+  return 1;
+}
+
 void sys_halt(void)
 {
-  //power_off();
+  shutdown_power_off();
 }
 
 void sys_exit(int status) 
@@ -134,14 +149,19 @@ int sys_read(int fd, void *buffer, unsigned size)
 
 int sys_write(int fd, void *buffer, unsigned size)
 {
-  printf("entering sys_write...\n");
-  char* cbuffer = (char*) buffer;
-  int i;
-  for(i = 0; i < size; i++)
-  {
-    printf((char) cbuffer[i]);
+  // step 1: copyin buffer
+  char* a = malloc(size * sizeof(char));
+  copy_in(a, buffer, size);  
+
+  // setp 2: write
+  if(fd == 1) {
+    putbuf(a, size);
+  } else {
   }
-  printf("exiting sys_write!\n");
+
+  free(a);
+
+  return 0; //strlen(buffer)+1;
 }
 
 void sys_seek(int fd, unsigned position)
@@ -157,16 +177,5 @@ unsigned sys_tell(int fd)
 void sys_close(int fd)
 {
 
-}
-
-int copy_in (uint8_t* dest, uint8_t* src, uint8_t size)
-{
-  uint8_t i = 0;
-  for(; i < size; i++)
-  {
-    if(!get_user(dest+i, src+i))
-	return 0;
-  }
-  return 1;
 }
 
