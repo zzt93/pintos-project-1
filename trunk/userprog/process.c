@@ -83,6 +83,11 @@ start_process (void *file_name_)
   printf("starting process.....\n");
   char *fn_copy;
   fn_copy = palloc_get_page (0);
+
+  if(is_user_vaddr(fn_copy) == false) {
+    printf("address is not in user space\n");
+  }
+  
   if (fn_copy == NULL)
     thread_exit ();//This might be awful and not work
   strlcpy (fn_copy, (char*)file_name_, PGSIZE);  
@@ -94,21 +99,20 @@ start_process (void *file_name_)
 
   printf("c: %d\n", c);  
 
-  char** v = malloc(sizeof(char*)*c);
+  int* v = malloc(sizeof(int)*c);
   
   char *token, *save_ptr;
   int i = 0;
   for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
   {
-     v[i] = malloc(sizeof(char)*strlen(token));
-     strlcpy(v[i], token, strlen(token)+1);
-     printf("token found[%d]: %s\n", i, token);
+     v[i] = token - fn_copy;
+     printf("token found[%d]: %s at index %d\n", i, token, v[i]);
      i++;
   }
   printf("end tokens\n");
   
-  char *file_name = v[0];
+  char *file_name = fn_copy;
   printf("file_name is %s\n", file_name);
 
   struct intr_frame if_;
@@ -122,14 +126,26 @@ start_process (void *file_name_)
   success = load (file_name, &if_.eip, &if_.esp);
   printf("success: %d\n", success);
 
-  //if_.esp -= 4 - (file_name_len + 1) % 4; /* alignment */
+  int size = strlen((char*)file_name_);
+  int start = if_.esp - 1;
+  int z;
+  for(z = 0; z <= size; z++) {
+    if_.esp -= 1;
+    if_.esp = '\0';
+    printf("putting character %c\n", fn_copy[z]);
+    *(char*)(if_.esp) = fn_copy[z];
+  }
+
+  if_.esp -= (4 - (size + 1) % 4);
+
   if_.esp -= 4;
-  *(int *)(if_.esp) = 0; /* argv[argc] == 0 */
+  *(int *)(if_.esp) = 0;
+
   /* Now pushing argv[x], and this is where the fun begins */
   for (i = c - 1; i >= 0; i--)
   {
     if_.esp -= 4;
-    *(void **)(if_.esp) = v[i]; /* argv[x] */
+    *(void **)(if_.esp) = 3221225462; //start + v[i]; /* argv[x] */
   }
 
   if_.esp -= 4;
@@ -138,26 +154,8 @@ start_process (void *file_name_)
   *(int *)(if_.esp) = c;
   if_.esp -= 4;
   *(int *)(if_.esp) = 0; // fake return address
-  
 
-/*
-  asm volatile ("pushl $0":::"memory");
-  printf("push 0\n");
-
-  for(i = c-1; i >= 0; i--)
-  {
-    // PUSH v[i]
-    asm volatile ("pushl %[arg]"::[arg] "m" (v[i]):"memory");
-    printf("push %s\n", v[i]);
-  }
-
-  asm volatile ("movl $4, %%eax; addl %%esp, %%eax; pushl %%eax":::"%eax");
-  printf("push es+4\n");
-  
-  asm volatile ("pushl %[arg]"::[arg] "m" (c):"memory");
-  printf("push c: %d\n", c); */
-  
-  free(v); //array of pointers to arguments
+  free(v);
 
   /* If load failed, quit. */
   palloc_free_page (file_name_);
@@ -169,6 +167,13 @@ start_process (void *file_name_)
   int q;
   for(q = 19; q >= 0; q--)
     printf("q is %u: \t%u\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
+
+  printf("address at 3221225466 is %s\n", 3221225466);
+
+  for(q = 19; q >= 0; q--)
+    printf("q is %u: \t%c\n", ((((int*)if_.esp) + q)), (char)((int)*(((int*)if_.esp) + q)));
+
+  printf("phys base is %u\n", PHYS_BASE);
 
   printf("jumping...\n");
 
