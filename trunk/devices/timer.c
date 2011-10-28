@@ -1,11 +1,12 @@
+#include "devices/timer.h"
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
 #include <stdio.h>
 #include "devices/pit.h"
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #include "threads/thread.h"
-#include "devices/timer.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -29,20 +30,14 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
-static struct list sleepers;
-
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
 timer_init (void) 
 {
-  list_init(&sleepers);
-
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
-  
 }
-
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
 void
@@ -97,14 +92,8 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-
-  intr_disable();
-  struct thread* t = thread_current();
-  t->wakeup_time = start + ticks;
-	insert_sleep(&t->elem);
-	thread_block();
-	
-  intr_enable();
+  while (timer_elapsed (start) < ticks) 
+    thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -150,7 +139,7 @@ timer_mdelay (int64_t ms)
    Busy waiting wastes CPU cycles, and busy waiting with
    interrupts off for the interval between timer ticks or longer
    will cause timer ticks to be lost.  Thus, use timer_usleep()
-   insteadthr if interrupts are enabled. */
+   instead if interrupts are enabled. */
 void
 timer_udelay (int64_t us) 
 {
@@ -182,19 +171,6 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
-	struct thread* t;
-	while (!list_empty(&sleepers))
-	{
-		t = list_entry(list_begin(&sleepers),struct thread,elem);
-		if (t->wakeup_time <= ticks)
-		{
-			list_remove(&t->elem);
-			thread_unblock(t);
-		}
-		else break;
-		
-	}
-	
   thread_tick ();
 }
 
@@ -267,13 +243,4 @@ real_time_delay (int64_t num, int32_t denom)
      the possibility of overflow. */
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
-}
-
-void insert_sleep (struct list_elem* elem)
-{
-	list_insert_ordered (&sleepers,elem,&thread_wake_order,NULL);
-}
-bool thread_wake_order (const struct list_elem* one,const struct list_elem* two,void* aux)
-{
-	return list_entry(one,struct thread,elem)->wakeup_time < list_entry(two,struct thread,elem)->wakeup_time;
 }

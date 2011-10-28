@@ -166,6 +166,10 @@ start_process (void *file_name_)
     thread_exit ();
   }
 
+  int q;
+  for(q = 19; q >= 0; q--)
+    printf("q is %u: \t%u\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
+
   printf("jumping...\n");
 
   /* Start the user process by simulating a return from an
