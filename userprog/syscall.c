@@ -3,6 +3,7 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -76,18 +77,36 @@ syscall_handler (struct intr_frame *f UNUSED)
 static inline int
 get_user (uint8_t *dst, const uint8_t *usrc)
 {
-  int eax;
-  asm ("movl $1f, %%eax; movb %2, %%al; movb %%al, %0; 1:" : "=m" (*dst), "=&a" (eax) : "m" (*usrc));
-  return eax != 0;
+  if(is_user_vaddr(usrc) &&  is_kernel_vaddr(dst))
+  {
+    int eax;
+    asm ("movl $1f, %%eax; movb %2, %%al; movb %%al, %0; 1:" : "=m" (*dst), "=&a" (eax) : "m" (*usrc));
+    return eax != 0;
+  }
+  else
+  {
+    if(is_user_vaddr(usrc))
+      printf("Kernel address is outside of its space: is %u\n", (unsigned)dst);
+    if(is_kernel_vaddr(dst))
+      printf("User address is outside of its space: is %u\n", (unsigned)dst);
+    return 0;
+  }
 }
 
 /* Writes BYTE to user address UDST. */
 static inline int
 put_user (uint8_t *udst, uint8_t byte)
 {
-  int eax;
-  asm ("movl $1f, %%eax; movb %b2, %0; 1:" : "=m" (*udst), "=&a" (eax) : "q" (byte));
-  return eax != 0;
+  if(is_user_vaddr(udst))
+  {
+    int eax;
+    asm ("movl $1f, %%eax; movb %b2, %0; 1:" : "=m" (*udst), "=&a" (eax) : "q" (byte));
+    return eax != 0;
+  }
+  else
+  {
+    return 0;
+  }
 }
 
 int copy_in (uint8_t* dest, uint8_t* src, uint8_t size)
@@ -119,7 +138,8 @@ pid_t sys_exec(const char *cmd_line)
 
 int sys_wait(pid_t pid)
 {
-  sema_down(&(thread_by_tid(pid)->wait_for));
+  //sema_down(&(thread_by_tid(pid)->wait_for));
+  return 0;
 }
 
 int sys_create(const char* file, unsigned initial_size)
