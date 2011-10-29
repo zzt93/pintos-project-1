@@ -9,15 +9,17 @@ static void syscall_handler (struct intr_frame *);
 
 void
 syscall_init (void) 
-{
-  lock_init(&fs_lock);  
+{  
+  printf("syscall_init beginning...\n");
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  lock_init(&fs_lock);  
+  printf("syscall_init complete\n");
 }
 
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-  lock_acquire(&fs_lock);
+  //lock_acquire(&fs_lock);
   printf("entering syscalls.....\n");
 
   //int q;
@@ -70,7 +72,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
   printf("eax is %d\n", f->eax);
 
-  lock_release(&fs_lock);
+  //lock_release(&fs_lock);
 }
 
 /* Copies a byte from user address USRC to kernel address DST. */
