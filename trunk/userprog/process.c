@@ -82,7 +82,8 @@ start_process (void *file_name_)
 {
   printf("starting process.....\n");
   char *fn_copy;
-  fn_copy = palloc_get_page (0);
+  fn_copy = palloc_get_page (PAL_USER);
+  printf("fn_copy is at %p\n", fn_copy);
 
   if(is_user_vaddr(fn_copy) == false) {
     printf("address is not in user space\n");
@@ -127,16 +128,23 @@ start_process (void *file_name_)
   printf("success: %d\n", success);
 
   int size = strlen((char*)file_name_);
-  int start = if_.esp - 1;
+  int start = if_.esp;
   int z;
+
+  if_.esp -= size + 4;
+  if_.esp -= ((int)if_.esp) % 4;
+  
+  int old_esp = if_.esp;
+  
   for(z = 0; z <= size; z++) {
-    if_.esp -= 1;
-    if_.esp = '\0';
     printf("putting character %c\n", fn_copy[z]);
     *(char*)(if_.esp) = fn_copy[z];
+    if_.esp += 1;
   }
 
-  if_.esp -= (4 - (size + 1) % 4);
+  if_.esp = old_esp - 4;
+
+  printf("s is %s\n", start);
 
   if_.esp -= 4;
   *(int *)(if_.esp) = 0;
@@ -145,7 +153,8 @@ start_process (void *file_name_)
   for (i = c - 1; i >= 0; i--)
   {
     if_.esp -= 4;
-    *(void **)(if_.esp) = 3221225462; //start + v[i]; /* argv[x] */
+    printf("arg %d on stack is %s\n", i, old_esp + v[i]);
+    *(void **)(if_.esp) = old_esp + v[i]; /* argv[x] */
   }
 
   if_.esp -= 4;
@@ -164,16 +173,18 @@ start_process (void *file_name_)
     thread_exit ();
   }
 
+  printf("\n\n\n");
   int q;
   for(q = 19; q >= 0; q--)
-    printf("q is %u: \t%u\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
+    printf("q is %p: \t%p\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
 
-  printf("address at 3221225466 is %s\n", 3221225466);
-
+  printf("\n\n\n");
   for(q = 19; q >= 0; q--)
-    printf("q is %u: \t%c\n", ((((int*)if_.esp) + q)), (char)((int)*(((int*)if_.esp) + q)));
+    printf("q is %p: \t%c\n", ((((int*)if_.esp) + q)), (char)((int)*(((int*)if_.esp) + q)));
 
-  printf("phys base is %u\n", PHYS_BASE);
+  printf("phys base is %p\n", PHYS_BASE);
+
+  printf("q at 0xbffffff9 is %s\n", 0xbffffff9);
 
   printf("jumping...\n");
 

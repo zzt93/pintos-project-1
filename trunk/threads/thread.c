@@ -137,8 +137,6 @@ thread_tick (void)
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
-
-   printf("tick");
 }
 
 /* Prints thread statistics. */
@@ -291,6 +289,7 @@ void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
+  sema_up(&(thread_current()->wait_for));
 
 #ifdef USERPROG
   process_exit ();
@@ -303,6 +302,7 @@ thread_exit (void)
   list_remove (&thread_current()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();
+  
   NOT_REACHED ();
 }
 
@@ -339,6 +339,17 @@ thread_foreach (thread_action_func *func, void *aux)
       struct thread *t = list_entry (e, struct thread, allelem);
       func (t, aux);
     }
+}
+
+struct thread* thread_by_tid(tid_t tid)
+{
+  struct list_elem *e;
+  for(e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e))
+  {
+    struct thread *t = list_entry(e, struct thread, allelem);
+    if(t->tid == tid) return t;
+  }
+  return NULL;
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
@@ -467,10 +478,16 @@ init_thread (struct thread *t, const char *name, int priority)
 
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
-  strlcpy (t->name, name, sizeof t->name);
+  
+  int cnt = 0;
+  while(name[cnt] != ' ' && name[cnt] != '\0') cnt++;
+  
+  strlcpy (t->name, name, cnt+1); // sizeof t->name);
+
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  sema_init (&(t->wait_for), 0);
   list_push_back (&all_list, &t->allelem);
 }
 
