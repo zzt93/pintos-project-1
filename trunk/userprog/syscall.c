@@ -10,21 +10,23 @@ static void syscall_handler (struct intr_frame *);
 void
 syscall_init (void) 
 {  
-  printf("syscall_init beginning...\n");
+  //printf("syscall_init beginning...\n");
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
   lock_init(&fs_lock);  
-  printf("syscall_init complete\n");
+  //printf("syscall_init complete\n");
 }
 
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  if(is_kernel_vaddr(f->esp))
+    sys_exit(-1);
   //lock_acquire(&fs_lock);
-  printf("entering syscalls.....\n");
+  //printf("entering syscalls.....\n");
 
   //int q;
   //for(q = 19; q >= 0; q--)
-  //  printf("q is %d: \t%d\n", (((int*)f->esp) + q), (int)*(((int*)f->esp) + q));
+  //  //printf("q is %d: \t%d\n", (((int*)f->esp) + q), (int)*(((int*)f->esp) + q));
 
   typedef int syscall_function (int, int, int);
 
@@ -65,12 +67,12 @@ syscall_handler (struct intr_frame *f UNUSED)
   memset (args, 0, sizeof args);
   copy_in (args, (uint32_t *) f->esp + 1, sizeof *args * sc->arg_cnt);
   
-  printf ("system call: %d\n", call_nr);
-  printf ("arguments are %u, %u, %u\n", (unsigned)args[0], (unsigned)args[1], (unsigned)args[2]);
+  //printf ("system call: %d\n", call_nr);
+  //printf ("arguments are %u, %u, %u\n", (unsigned)args[0], (unsigned)args[1], (unsigned)args[2]);
 
   f->eax = sc->func (args[0], args[1], args[2]);
 
-  printf("eax is %d\n", f->eax);
+  //printf("eax is %d\n", f->eax);
 
   //lock_release(&fs_lock);
 }
@@ -90,7 +92,10 @@ get_user (uint8_t *dst, const uint8_t *usrc)
     if(is_user_vaddr(usrc))
       printf("Kernel address is outside of its space: is %u\n", (unsigned)dst);
     if(is_kernel_vaddr(dst))
-      printf("User address is outside of its space: is %u\n", (unsigned)dst);
+    {
+      //printf("User address is outside of its space: is %u\n", (unsigned)dst);
+      sys_exit(-1);
+    }
     return 0;
   }
 }
@@ -146,7 +151,9 @@ int sys_wait(pid_t pid)
 
 int sys_create(const char* file, unsigned initial_size)
 {
-  return 0;
+  if(file == NULL)
+    sys_exit(-1);
+  filesys_create(file, initial_size);
 }
 
 int sys_remove(const char* file)

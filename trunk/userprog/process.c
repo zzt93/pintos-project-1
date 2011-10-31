@@ -28,8 +28,8 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
-  printf("beginning.....\n");
-  printf("file is %s\n", file_name);
+  //printf("beginning.....\n");
+  //printf("file is %s\n", file_name);
 
   char *fn_copy;
   tid_t tid;
@@ -40,17 +40,17 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-  printf("fn_copy: %s\n", fn_copy);
+  //printf("fn_copy: %s\n", fn_copy);
   
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  printf("tid is %d\n", tid);
+  //printf("tid is %d\n", tid);
 
   struct thread* t = thread_by_tid(tid);
-  printf("thread is %s\n", t->name);
+  //printf("thread is %s\n", t->name);
   
   sema_down(&(t->wait_for)); //TODO: wait for load only!!
-  printf("the wait is over\n");
+  //printf("the wait is over\n");
   
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -59,11 +59,11 @@ process_execute (const char *file_name)
 }
 
 // TODO: possibly not use tokenizer to avoid string copy?
-int get_count(char* s)
+int get_count(const char* s)
 {
 
   char* news = malloc(sizeof(char)*(strlen(s)+1));
-  strlcpy(news, s, strlen(s));
+  strlcpy(news, s, strlen(s)+1);
   char *token, *save_ptr;
   int i = 0;
   for (token = strtok_r (news, " ", &save_ptr); token != NULL;
@@ -80,13 +80,13 @@ int get_count(char* s)
 static void
 start_process (void *file_name_)
 {
-  printf("starting process.....\n");
+  //printf("starting process.....\n");
   char *fn_copy;
   fn_copy = palloc_get_page (PAL_USER);
-  printf("fn_copy is at %p\n", fn_copy);
+  //printf("fn_copy is at %p\n", fn_copy);
 
   if(is_user_vaddr(fn_copy) == false) {
-    printf("address is not in user space\n");
+    //printf("address is not in user space\n");
   }
   
   if (fn_copy == NULL)
@@ -94,11 +94,11 @@ start_process (void *file_name_)
   strlcpy (fn_copy, (char*)file_name_, PGSIZE);  
   
   // print fn_copy
-  printf("fn_copy: %s\n", fn_copy);
+  //printf("fn_copy: %s\n", fn_copy);
   
   int c = get_count(fn_copy);
 
-  printf("c: %d\n", c);  
+  //printf("c: %d\n", c);  
 
   int* v = malloc(sizeof(int)*c);
   
@@ -108,13 +108,13 @@ start_process (void *file_name_)
        token = strtok_r (NULL, " ", &save_ptr))
   {
      v[i] = token - fn_copy;
-     printf("token found[%d]: %s at index %d\n", i, token, v[i]);
+     //printf("token found[%d]: %s at index %d\n", i, token, v[i]);
      i++;
   }
-  printf("end tokens\n");
+  //printf("end tokens\n");
   
   char *file_name = fn_copy;
-  printf("file_name is %s\n", file_name);
+  //printf("file_name is %s\n", file_name);
 
   struct intr_frame if_;
   bool success;
@@ -125,7 +125,7 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-  printf("success: %d\n", success);
+  //printf("success: %d\n", success);
 
   int size = strlen((char*)file_name_);
   int start = if_.esp;
@@ -137,14 +137,14 @@ start_process (void *file_name_)
   int old_esp = if_.esp;
   
   for(z = 0; z <= size; z++) {
-    printf("putting character %c\n", fn_copy[z]);
+    //printf("putting character %c\n", fn_copy[z]);
     *(char*)(if_.esp) = fn_copy[z];
     if_.esp += 1;
   }
 
   if_.esp = old_esp - 4;
 
-  printf("s is %s\n", start);
+  //printf("s is %s\n", start);
 
   if_.esp -= 4;
   *(int *)(if_.esp) = 0;
@@ -153,7 +153,7 @@ start_process (void *file_name_)
   for (i = c - 1; i >= 0; i--)
   {
     if_.esp -= 4;
-    printf("arg %d on stack is %s\n", i, old_esp + v[i]);
+    //printf("arg %d on stack is %s\n", i, old_esp + v[i]);
     *(void **)(if_.esp) = old_esp + v[i]; /* argv[x] */
   }
 
@@ -173,20 +173,20 @@ start_process (void *file_name_)
     thread_exit ();
   }
 
-  printf("\n\n\n");
-  int q;
-  for(q = 19; q >= 0; q--)
-    printf("q is %p: \t%p\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
+  //printf("\n\n\n");
+  //int q;
+  //for(q = 19; q >= 0; q--)
+    //printf("q is %p: \t%p\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
 
-  printf("\n\n\n");
-  for(q = 19; q >= 0; q--)
-    printf("q is %p: \t%c\n", ((((int*)if_.esp) + q)), (char)((int)*(((int*)if_.esp) + q)));
+  //printf("\n\n\n");
+  //for(q = 19; q >= 0; q--)
+    //printf("q is %p: \t%c\n", ((((int*)if_.esp) + q)), (char)((int)*(((int*)if_.esp) + q)));
 
-  printf("phys base is %p\n", PHYS_BASE);
+  //printf("phys base is %p\n", PHYS_BASE);
 
-  printf("q at 0xbffffff9 is %s\n", 0xbffffff9);
+  //printf("q at 0xbffffff9 is %s\n", 0xbffffff9);
 
-  printf("jumping...\n");
+  //printf("jumping...\n");
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -261,7 +261,7 @@ process_activate (void)
 typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;
 typedef uint16_t Elf32_Half;
 
-/* For use with ELF types in printf(). */
+/* For use with ELF types in //printf(). */
 #define PE32Wx PRIx32   /* Print Elf32_Word in hexadecimal. */
 #define PE32Ax PRIx32   /* Print Elf32_Addr in hexadecimal. */
 #define PE32Ox PRIx32   /* Print Elf32_Off in hexadecimal. */
@@ -347,7 +347,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name);
   if (file == NULL) 
     {
-      printf ("load: %s: open failed\n", file_name);
+      //printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
 
@@ -360,7 +360,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       || ehdr.e_phentsize != sizeof (struct Elf32_Phdr)
       || ehdr.e_phnum > 1024) 
     {
-      printf ("load: %s: error loading executable\n", file_name);
+      //printf ("load: %s: error loading executable\n", file_name);
       goto done; 
     }
 
