@@ -28,6 +28,7 @@ int sys_write(int fd, void *buffer, unsigned size);
 void sys_seek(int fd, unsigned position);
 unsigned sys_tell(int fd);
 void sys_close(int fd);
+struct file_descriptor* get_file(int fd);
 
 int copy_in (uint8_t* dest, uint8_t* src, uint8_t size);
 

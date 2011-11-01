@@ -189,8 +189,6 @@ int sys_open (const char *ufile)
       struct thread *cur = thread_current ();
       handle = fd->handle = cur->next_handle++;
       list_push_front (&cur->fds, &fd->elem);
-//printf("%d\topened\n",handle);
-//print_list(&cur->fds);
     }
 
   }
@@ -206,7 +204,23 @@ int sys_filesize(int fd)
 
 int sys_read(int fd, void *buffer, unsigned size)
 {
-  return 0;
+  if (!is_user_vaddr(buffer)) sys_exit(-1);
+  int bytes_read = -1;
+  if (fd == STDIN_FILENO)
+  {
+    for (bytes_read = 0; bytes_read < size; bytes_read++)
+      *((char*)buffer+bytes_read) = input_getc();
+  }
+  else if (fd == STDOUT_FILENO) sys_exit(-1);//read from stdout
+  else
+  {
+    struct file_descriptor* file = get_file(fd);
+    if (file != NULL)
+      bytes_read = file_read (file->file,buffer,size);
+//printf("%d\t%d\t%d\n",bytes_read,file->handle,fd);
+  }
+printf("%s\n--%d",(char*)buffer,bytes_read);
+  return bytes_read;
 }
 
 int sys_write(int fd, void *buffer, unsigned size)
@@ -238,20 +252,8 @@ unsigned sys_tell(int fd)
 
 void sys_close(int fd)
 {
-//printf("closing %d\n",fd);
-  struct list_elem* e;
-  struct file_descriptor* file_d;
-  struct thread* t = thread_current();
-//print_list(&t->fds);
-  for (e = list_begin (&(t->fds)); e != list_end (&(t->fds)); e = list_next(e))
-  {
-    file_d = list_entry (e, struct file_descriptor, elem);
-//printf("%d\t%d\n",fd,file_d->handle);
-    if (file_d->handle == fd) break;
-    else fd = NULL;
-  }
-
-  if (fd == NULL) sys_exit(-1);
+  struct file_descriptor* file_d = get_file(fd);
+  if (file_d == NULL) sys_exit(-1);
 
   lock_acquire(&fs_lock);
   file_close(file_d->file);
@@ -260,3 +262,16 @@ void sys_close(int fd)
   lock_release(&fs_lock);
 }
 
+struct file_descriptor* get_file(int fd)
+{
+  struct list_elem* e;
+  struct file_descriptor* file_d;
+  struct thread* t = thread_current();
+  for (e = list_begin (&(t->fds)); e != list_end (&(t->fds)); e = list_next(e))
+  {
+    file_d = list_entry (e, struct file_descriptor, elem);
+    if (file_d->handle == fd) break;
+    else file_d = NULL;
+  }
+  return file_d;
+}
