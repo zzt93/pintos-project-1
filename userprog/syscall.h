@@ -2,8 +2,14 @@
 #define USERPROG_SYSCALL_H
 
 #include "lib/stdint.h"
+#include "lib/kernel/list.h"
 
 typedef int pid_t;
+struct file_descriptor {
+  int handle;
+  struct file* file;
+  struct list_elem elem;
+};
 
 void syscall_init (void);
 
