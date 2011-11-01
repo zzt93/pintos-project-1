@@ -7,6 +7,17 @@
 
 static void syscall_handler (struct intr_frame *);
 
+void print_list(struct list* list)
+{
+  struct list_elem* e;
+  struct file_descriptor* file_d;
+  for (e = list_begin (list); e != list_end (list); e = list_next(e))
+  {
+    file_d = list_entry (e, struct file_descriptor, elem);
+printf("-%d\n",file_d->handle);
+  }
+}
+
 void
 syscall_init (void) 
 {  
@@ -161,9 +172,31 @@ int sys_remove(const char* file)
   return 0;
 }
 
-int sys_open(const char *file)
+int sys_open (const char *ufile)
 {
-  return 0;
+  struct file_descriptor *fd;
+  int handle = -1;
+
+  if (ufile == NULL) sys_exit(-1);
+
+  fd = malloc (sizeof *fd);
+  if (fd != NULL)
+  {
+    lock_acquire (&fs_lock);
+    fd->file = filesys_open (ufile);
+    if (fd->file != NULL)
+    {
+      struct thread *cur = thread_current ();
+      handle = fd->handle = cur->next_handle++;
+      list_push_front (&cur->fds, &fd->elem);
+//printf("%d\topened\n",handle);
+//print_list(&cur->fds);
+    }
+
+  }
+  else free (fd);
+  lock_release (&fs_lock);
+  return handle;
 }
 
 int sys_filesize(int fd)
@@ -205,6 +238,25 @@ unsigned sys_tell(int fd)
 
 void sys_close(int fd)
 {
+//printf("closing %d\n",fd);
+  struct list_elem* e;
+  struct file_descriptor* file_d;
+  struct thread* t = thread_current();
+//print_list(&t->fds);
+  for (e = list_begin (&(t->fds)); e != list_end (&(t->fds)); e = list_next(e))
+  {
+    file_d = list_entry (e, struct file_descriptor, elem);
+//printf("%d\t%d\n",fd,file_d->handle);
+    if (file_d->handle == fd) break;
+    else fd = NULL;
+  }
 
+  if (fd == NULL) sys_exit(-1);
+
+  lock_acquire(&fs_lock);
+  file_close(file_d->file);
+  list_remove(&(file_d->elem));
+  free(file_d);
+  lock_release(&fs_lock);
 }
 
