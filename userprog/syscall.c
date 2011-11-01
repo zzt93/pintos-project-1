@@ -151,7 +151,13 @@ void sys_exit(int status)
 
 pid_t sys_exec(const char *cmd_line)
 {
-  return process_execute(cmd_line);
+  int pid = process_execute(cmd_line);//implement synchronization to indicate if this failed
+  if (pid == -1)//ERROR
+  {
+    printf("load: %s: open failed\n",cmd_line);
+    pid = -1;
+  }
+  return pid;
 }
 
 int sys_wait(pid_t pid)
@@ -199,7 +205,14 @@ int sys_open (const char *ufile)
 
 int sys_filesize(int fd)
 {
-  return 0;
+  struct file_descriptor* file_d = get_file(fd);
+  int len = -1;
+//printf("fd: %d\t%u\n",fd,file_d);
+  if (file_d == NULL) sys_exit(-1);
+//printf("...");
+  len = file_length(file_d->file);
+//printf("len = %d\n",len);
+  return len;
 }
 
 int sys_read(int fd, void *buffer, unsigned size)
@@ -214,40 +227,57 @@ int sys_read(int fd, void *buffer, unsigned size)
   else if (fd == STDOUT_FILENO) sys_exit(-1);//read from stdout
   else
   {
+    lock_acquire(&fs_lock);
     struct file_descriptor* file = get_file(fd);
     if (file != NULL)
       bytes_read = file_read (file->file,buffer,size);
-//printf("%d\t%d\t%d\n",bytes_read,file->handle,fd);
+    lock_release(&fs_lock);
+//printf("%s\t%d\n", buffer,bytes_read);
   }
-printf("%s\n--%d",(char*)buffer,bytes_read);
   return bytes_read;
 }
 
 int sys_write(int fd, void *buffer, unsigned size)
 {
+  int bytes_written = -1;
   // step 1: copyin buffer
-  char* a = malloc(size * sizeof(char));
-  copy_in(a, buffer, size);  
+  //char* a = malloc(size * sizeof(char));
+  //copy_in(a, buffer, size);
 
   // setp 2: write
-  if(fd == 1) {
-    putbuf(a, size);
-  } else {
+  if(fd == STDOUT_FILENO) {
+    putbuf(buffer, size);
+    bytes_written = size;
+  }
+  else if (fd == STDIN_FILENO) sys_exit(-1);
+  else
+  {
+//printf("writing %d %d",fd,size);
+    lock_acquire(&fs_lock);
+    struct file_descriptor* file_d = get_file(fd);
+    if (file_d != NULL)
+      bytes_written = file_write(file_d->file,buffer,size);
+    lock_release(&fs_lock);
   }
 
-  free(a);
+  //free(a);
 
-  return 0; //strlen(buffer)+1;
+  return bytes_written; //strlen(buffer)+1;
 }
 
 void sys_seek(int fd, unsigned position)
 {
-
+  struct file_descriptor* file = get_file(fd);
+  if (file == NULL) sys_exit(-1);
+  file_seek(file,position);
 }
 
 unsigned sys_tell(int fd)
 {
-  return 0;
+  struct file_descriptor* file = get_file(fd);
+  if (file == NULL) sys_exit(-1);
+
+  return file_tell(file);
 }
 
 void sys_close(int fd)
