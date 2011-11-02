@@ -285,7 +285,9 @@ run_task (char **argv)
   
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
-  process_wait (process_execute (task));
+  struct exec exec;exec.success = false;sema_init(&exec.loaded,0);
+  exec.file_name = task;
+  process_wait (process_execute (&exec));
 #else
   run_test (task);
 #endif
