@@ -11,6 +11,7 @@ struct file_descriptor {
   struct list_elem elem;
 };
 
+
 void syscall_init (void);
 
 void sys_halt(void);

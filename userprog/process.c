@@ -26,14 +26,14 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
 tid_t
-process_execute (const char *file_name) 
+process_execute (struct exec* exec) 
 {
   //printf("beginning.....\n");
   //printf("file is %s\n", file_name);
-
+  char *file_name = exec->file_name;
   char *fn_copy;
   tid_t tid;
-
+//printf("%u\t%u\n",exec->file_name,file_name);
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -41,9 +41,9 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
   //printf("fn_copy: %s\n", fn_copy);
-  
+  exec->file_name = fn_copy;
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, exec);
   //printf("tid is %d\n", tid);
 
   struct thread* t = thread_by_tid(tid);
@@ -54,6 +54,11 @@ process_execute (const char *file_name)
   
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+  else
+  {
+//printf("waiting\n");
+    sema_down(&exec->loaded);
+  }
 
   return tid;
 }
@@ -78,8 +83,10 @@ int get_count(const char* s)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+start_process (void* exec_)
 {
+  struct exec* exec = (struct exec*) exec_;
+  void* file_name_ = (void*) exec->file_name;
   //printf("starting process.....\n");
   char *fn_copy;
   fn_copy = palloc_get_page (PAL_USER);
@@ -125,7 +132,9 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-  //printf("success: %d\n", success);
+//printf("success: %d\n", success);
+  if (success)
+  {
 
   int size = strlen((char*)file_name_);
   int start = if_.esp;
@@ -163,11 +172,14 @@ start_process (void *file_name_)
   *(int *)(if_.esp) = c;
   if_.esp -= 4;
   *(int *)(if_.esp) = 0; // fake return address
-
+  }
+  else printf("load: %s: open failed\n",(char*)file_name_);
   free(v);
 
   /* If load failed, quit. */
   palloc_free_page (file_name_);
+  exec->success = success;
+  sema_up(&exec->loaded);
   if (!success)
   {
     thread_exit ();

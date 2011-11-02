@@ -1,9 +1,11 @@
 #include "userprog/syscall.h"
+#include "userprog/process.h"
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+
 
 static void syscall_handler (struct intr_frame *);
 
@@ -151,12 +153,14 @@ void sys_exit(int status)
 
 pid_t sys_exec(const char *cmd_line)
 {
-  int pid = process_execute(cmd_line);//implement synchronization to indicate if this failed
-  if (pid == -1)//ERROR
-  {
-    printf("load: %s: open failed\n",cmd_line);
+  struct exec exec;
+  exec.success = false;
+  sema_init(&exec.loaded,0);
+  exec.file_name = cmd_line;
+//printf("%u",exec.file_name);
+  int pid = process_execute(&exec);//implement synchronization to indicate if this failed
+  if (!exec.success)//ERROR
     pid = -1;
-  }
   return pid;
 }
 
