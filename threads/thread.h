@@ -15,6 +15,12 @@ enum thread_status
     THREAD_DYING        /* About to be destroyed. */
   };
 
+struct wait_status {
+  struct semaphore done;
+  int exit_status;
+  struct list_elem elem;
+};
+
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
@@ -100,6 +106,7 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 struct list children;
+struct wait_status* wait_status;
 struct list fds;
 int next_handle;
 #endif

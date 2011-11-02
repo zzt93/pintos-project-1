@@ -58,6 +58,11 @@ process_execute (struct exec* exec)
   {
 //printf("waiting\n");
     sema_down(&exec->loaded);
+    if (exec->success)
+      list_push_back (&thread_current ()->children,
+                       &exec->wait_status->elem);
+    else
+      tid = TID_ERROR;
   }
 
   return tid;
@@ -136,42 +141,46 @@ start_process (void* exec_)
   if (success)
   {
 
-  int size = strlen((char*)file_name_);
-  int start = if_.esp;
-  int z;
+    int size = strlen((char*)file_name_);
+    int start = if_.esp;
+    int z;
 
-  if_.esp -= size + 4;
-  if_.esp -= ((int)if_.esp) % 4;
+    if_.esp -= size + 4;
+    if_.esp -= ((int)if_.esp) % 4;
   
-  int old_esp = if_.esp;
+    int old_esp = if_.esp;
   
-  for(z = 0; z <= size; z++) {
-    //printf("putting character %c\n", fn_copy[z]);
-    *(char*)(if_.esp) = fn_copy[z];
-    if_.esp += 1;
-  }
+    for(z = 0; z <= size; z++) {
+      //printf("putting character %c\n", fn_copy[z]);
+      *(char*)(if_.esp) = fn_copy[z];
+      if_.esp += 1;
+    }
 
-  if_.esp = old_esp - 4;
+    if_.esp = old_esp - 4;
 
-  //printf("s is %s\n", start);
+    //printf("s is %s\n", start);
 
-  if_.esp -= 4;
-  *(int *)(if_.esp) = 0;
-
-  /* Now pushing argv[x], and this is where the fun begins */
-  for (i = c - 1; i >= 0; i--)
-  {
     if_.esp -= 4;
-    //printf("arg %d on stack is %s\n", i, old_esp + v[i]);
-    *(void **)(if_.esp) = old_esp + v[i]; /* argv[x] */
-  }
+    *(int *)(if_.esp) = 0;
 
-  if_.esp -= 4;
-  *(char **)(if_.esp) = (if_.esp + 4); /* argv */
-  if_.esp -= 4;
-  *(int *)(if_.esp) = c;
-  if_.esp -= 4;
-  *(int *)(if_.esp) = 0; // fake return address
+    /* Now pushing argv[x], and this is where the fun begins */
+    for (i = c - 1; i >= 0; i--)
+    {
+      if_.esp -= 4;
+      //printf("arg %d on stack is %s\n", i, old_esp + v[i]);
+      *(void **)(if_.esp) = old_esp + v[i]; /* argv[x] */
+    }
+
+    if_.esp -= 4;
+    *(char **)(if_.esp) = (if_.esp + 4); /* argv */
+    if_.esp -= 4;
+    *(int *)(if_.esp) = c;
+    if_.esp -= 4;
+    *(int *)(if_.esp) = 0; // fake return address
+
+    exec->wait_status = thread_current()->wait_status = malloc(sizeof(struct wait_status));
+    exec->wait_status->exit_status = -1;
+    success = exec->wait_status != NULL;
   }
   else printf("load: %s: open failed\n",(char*)file_name_);
   free(v);
