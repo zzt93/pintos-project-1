@@ -7,6 +7,7 @@ struct exec {
   bool success;
   struct semaphore loaded;
   char* file_name;
+  struct wait_status* wait_status;
 };
 
 tid_t process_execute (struct exec*);

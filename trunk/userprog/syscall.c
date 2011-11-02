@@ -147,7 +147,10 @@ void sys_halt(void)
 
 void sys_exit(int status) 
 {
+  struct thread* t = thread_current ();
   printf("%s: exit(%d)\n", thread_current()->name, status);
+  t->wait_status->exit_status = status;
+  sema_up(&t->wait_status->done);
   thread_exit();
 }
 
