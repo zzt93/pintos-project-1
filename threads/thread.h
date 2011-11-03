@@ -18,6 +18,7 @@ enum thread_status
 struct wait_status {
   struct semaphore done;
   int exit_status;
+  int tid;
   struct list_elem elem;
 };
 
@@ -100,11 +101,12 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-    struct semaphore wait_for;
+//    struct semaphore wait_for;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+struct file* this_file;
 struct list children;
 struct wait_status* wait_status;
 struct list fds;

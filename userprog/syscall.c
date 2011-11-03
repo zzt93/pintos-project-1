@@ -148,8 +148,11 @@ void sys_halt(void)
 void sys_exit(int status) 
 {
   struct thread* t = thread_current ();
-  printf("%s: exit(%d)\n", thread_current()->name, status);
   t->wait_status->exit_status = status;
+printf("%s: exit(%d)\n", thread_current()->name, status);
+
+  file_close(t->this_file);
+
   sema_up(&t->wait_status->done);
   thread_exit();
 }
@@ -167,9 +170,50 @@ pid_t sys_exec(const char *cmd_line)
   return pid;
 }
 
+struct wait_status* find_child (tid_t child_tid)
+{
+  struct list_elem* e;
+  struct wait_status* child_wait_status = NULL;
+  struct thread* t = thread_current ();
+  
+  for (e = list_begin (&t->children); e != list_end (&t->children); e = list_next(e))
+  {
+    child_wait_status = list_entry (e, struct wait_status, elem);
+    if (child_wait_status->tid == child_tid) break;
+    else child_wait_status = NULL;
+  }
+  return child_wait_status;
+}
+
+void empty_children (struct thread* t)
+{
+  struct list_elem* e;
+  struct wait_status* child_wait_status = NULL;
+
+  if (t == NULL) t = thread_current ();
+
+  for (e = list_begin (&t->children); e != list_end (&t->children); e = list_begin(&t->children))
+  {
+//printf("%u\t %u\n", list_begin (&t->children), list_end (&t->children));
+    child_wait_status = list_entry (e, struct wait_status, elem);
+    list_remove(&child_wait_status->elem);
+    free(child_wait_status);
+    child_wait_status = NULL;
+  }
+}
+
 int sys_wait(pid_t pid)
 {
-  //sema_down(&(thread_by_tid(pid)->wait_for));
+  int exit_status = -1;
+  struct wait_status* child_wait_status = find_child (pid);
+  if (child_wait_status != NULL)
+  {
+    list_remove (&child_wait_status->elem);
+    sema_down (&child_wait_status->done);
+    exit_status = child_wait_status->exit_status;
+    free(child_wait_status);
+  }
+  return exit_status;
   return 0;
 }
 
