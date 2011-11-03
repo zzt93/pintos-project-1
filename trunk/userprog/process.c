@@ -49,7 +49,7 @@ process_execute (struct exec* exec)
   struct thread* t = thread_by_tid(tid);
   //printf("thread is %s\n", t->name);
   
-  sema_down(&(t->wait_for)); //TODO: wait for load only!!
+//  sema_down(&(t->wait_for)); //TODO: wait for load only!! [DONE]
   //printf("the wait is over\n");
   
   if (tid == TID_ERROR)
@@ -58,6 +58,7 @@ process_execute (struct exec* exec)
   {
 //printf("waiting\n");
     sema_down(&exec->loaded);
+    exec->wait_status->tid = tid;
     if (exec->success)
       list_push_back (&thread_current ()->children,
                        &exec->wait_status->elem);
@@ -179,6 +180,7 @@ start_process (void* exec_)
     *(int *)(if_.esp) = 0; // fake return address
 
     exec->wait_status = thread_current()->wait_status = malloc(sizeof(struct wait_status));
+    sema_init (&exec->wait_status->done,0);
     exec->wait_status->exit_status = -1;
     success = exec->wait_status != NULL;
   }
@@ -219,6 +221,8 @@ start_process (void* exec_)
   NOT_REACHED ();
 }
 
+
+
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
    exception), returns -1.  If TID is invalid or if it was not a
@@ -229,10 +233,21 @@ start_process (void* exec_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  return -1;
+  return sys_wait(child_tid);
+  /*int exit_status = -1;
+  struct wait_status* child_wait_status = find_child (child_tid);
+  if (child_wait_status != NULL)
+  {
+    list_remove (&child_wait_status->elem);
+    sema_down (&child_wait_status->done);
+    exit_status = child_wait_status->exit_status;
+    free(child_wait_status);
+  }
+  return exit_status;*/
 }
+
 
 /* Free the current process's resources. */
 void
@@ -240,6 +255,8 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  empty_children(cur);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -371,7 +388,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       //printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
-
+  t->this_file = file;
+  file_deny_write(t->this_file);//TODO: not actually a to do, just noting that I added this line and above
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -455,7 +473,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+//  file_close (file);
   return success;
 }
 

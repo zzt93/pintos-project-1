@@ -289,7 +289,7 @@ void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
-  sema_up(&(thread_current()->wait_for));
+//  sema_up(&(thread_current()->wait_for));
 
 #ifdef USERPROG
   process_exit ();
@@ -487,10 +487,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-  sema_init (&(t->wait_for), 0);
-t->next_handle = 2;
-list_init(&(t->children));
-list_init(&(t->fds));
+//  sema_init (&(t->wait_for), 0);
+  t->next_handle = 2;
+  list_init(&(t->children));
+  list_init(&(t->fds));
   list_push_back (&all_list, &t->allelem);
 }
 
