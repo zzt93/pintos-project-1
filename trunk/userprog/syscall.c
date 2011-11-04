@@ -9,24 +9,11 @@
 
 static void syscall_handler (struct intr_frame *);
 
-void print_list(struct list* list)
-{
-  struct list_elem* e;
-  struct file_descriptor* file_d;
-  for (e = list_begin (list); e != list_end (list); e = list_next(e))
-  {
-    file_d = list_entry (e, struct file_descriptor, elem);
-printf("-%d\n",file_d->handle);
-  }
-}
-
 void
 syscall_init (void) 
-{  
-  //printf("syscall_init beginning...\n");
+{
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
-  lock_init(&fs_lock);  
-  //printf("syscall_init complete\n");
+  lock_init(&fs_lock);
 }
 
 static void
@@ -34,12 +21,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   if(is_kernel_vaddr(f->esp))
     sys_exit(-1);
-  //lock_acquire(&fs_lock);
-  //printf("entering syscalls.....\n");
-
-  //int q;
-  //for(q = 19; q >= 0; q--)
-  //  //printf("q is %d: \t%d\n", (((int*)f->esp) + q), (int)*(((int*)f->esp) + q));
 
   typedef int syscall_function (int, int, int);
 
@@ -79,15 +60,8 @@ syscall_handler (struct intr_frame *f UNUSED)
   ASSERT (sc->arg_cnt <= (sizeof args)/(sizeof *args));
   memset (args, 0, sizeof args);
   copy_in (args, (uint32_t *) f->esp + 1, sizeof *args * sc->arg_cnt);
-  
-  //printf ("system call: %d\n", call_nr);
-  //printf ("arguments are %u, %u, %u\n", (unsigned)args[0], (unsigned)args[1], (unsigned)args[2]);
 
   f->eax = sc->func (args[0], args[1], args[2]);
-
-  //printf("eax is %d\n", f->eax);
-
-  //lock_release(&fs_lock);
 }
 
 /* Copies a byte from user address USRC to kernel address DST. */
@@ -105,10 +79,7 @@ get_user (uint8_t *dst, const uint8_t *usrc)
     if(is_user_vaddr(usrc))
       printf("Kernel address is outside of its space: is %u\n", (unsigned)dst);
     if(is_kernel_vaddr(dst))
-    {
-      //printf("User address is outside of its space: is %u\n", (unsigned)dst);
       sys_exit(-1);
-    }
     return 0;
   }
 }
@@ -149,12 +120,11 @@ void sys_exit(int status)
 {
   struct thread* t = thread_current ();
   t->wait_status->exit_status = status;
-printf("%s: exit(%d)\n", thread_current()->name, status);
+  printf("%s: exit(%d)\n", thread_current()->name, status);
 
   file_close(t->this_file);
 
   sema_up(&t->wait_status->done);
-//ASSERT(0);
   thread_exit();
 }
 
@@ -164,9 +134,8 @@ pid_t sys_exec(const char *cmd_line)
   exec.success = false;
   sema_init(&exec.loaded,0);
   exec.file_name = cmd_line;
-//printf("%u",exec.file_name);
-  int pid = process_execute(&exec);//implement synchronization to indicate if this failed
-  if (!exec.success)//ERROR
+  int pid = process_execute(&exec);
+  if (!exec.success)
     pid = -1;
   return pid;
 }
@@ -195,7 +164,6 @@ void empty_children (struct thread* t)
 
   for (e = list_begin (&t->children); e != list_end (&t->children); e = list_begin(&t->children))
   {
-//printf("%u\t %u\n", list_begin (&t->children), list_end (&t->children));
     child_wait_status = list_entry (e, struct wait_status, elem);
     list_remove(&child_wait_status->elem);
     free(child_wait_status);
@@ -215,18 +183,17 @@ int sys_wait(pid_t pid)
     free(child_wait_status);
   }
   return exit_status;
-  return 0;
 }
 
-int sys_create(const char* file, unsigned initial_size)
+bool sys_create(const char* file, unsigned initial_size)
 {
-  if(file == NULL)
-    sys_exit(-1);
-  filesys_create(file, initial_size);
+  if(file == NULL) sys_exit(-1);
+  return filesys_create(file, initial_size);
 }
 
 bool sys_remove(const char* file)
 {
+  if (file == NULL) sys_exit(-1);
   return filesys_remove(file);
 }
 
@@ -245,7 +212,6 @@ int sys_open (const char *ufile)
     if (fd->file != NULL)
     {
       struct thread *cur = thread_current ();
-//printf("%d %u %u\n",cur->next_handle,fd,fd->file);
       handle = fd->handle = cur->next_handle++;
       list_push_front (&cur->fds, &fd->elem);
     }
@@ -260,33 +226,29 @@ int sys_filesize(int fd)
 {
   struct file_descriptor* file_d = get_file(fd);
   int len = -1;
-//printf("fd: %d\t%u\n",fd,file_d);
   if (file_d == NULL) sys_exit(-1);
-//printf("...");
   len = file_length(file_d->file);
-//printf("len = %d\n",len);
   return len;
 }
 
 int sys_read(int fd, void *buffer, unsigned size)
 {
-  if (!is_user_vaddr(buffer)) sys_exit(-1);
+  if (!is_user_vaddr(buffer)) sys_exit(-1);//exit if the buffer to read to is not in user space
   int bytes_read = -1;
+
   if (fd == STDIN_FILENO)
   {
     for (bytes_read = 0; bytes_read < size; bytes_read++)
       *((char*)buffer+bytes_read) = input_getc();
   }
-  else if (fd == STDOUT_FILENO) sys_exit(-1);//read from stdout
+  else if (fd == STDOUT_FILENO) sys_exit(-1);//read from stdout == BAD
   else
   {
     lock_acquire(&fs_lock);
-    struct file_descriptor* file = get_file(fd);
-//printf("%d %u %u\n",fd,file,file->file);
-    if (file != NULL)
-      bytes_read = file_read (file->file,buffer,size);
+    struct file_descriptor* file_d = get_file(fd);
+    if (file_d != NULL)
+      bytes_read = file_read (file_d->file,buffer,size);
     lock_release(&fs_lock);
-//printf("%s\t%d\n", buffer,bytes_read);
   }
   return bytes_read;
 }
@@ -294,50 +256,39 @@ int sys_read(int fd, void *buffer, unsigned size)
 int sys_write(int fd, void *buffer, unsigned size)
 {
   int bytes_written = -1;
-  // step 1: copyin buffer
-  //char* a = malloc(size * sizeof(char));
-  //copy_in(a, buffer, size);
 
-  // setp 2: write
-  if (!is_user_vaddr(buffer)) sys_exit(-1); //needed?
+  if (!is_user_vaddr(buffer)) sys_exit(-1);
   if(fd == STDOUT_FILENO) {
     putbuf(buffer, size);
     bytes_written = size;
   }
   else if (fd == STDIN_FILENO)
-  {
-//printf("attempted to write to stdin\n");
     sys_exit(-1);
-  }
   else
   {
-//printf("writing %d %d",fd,size);
     lock_acquire(&fs_lock);
-    struct file_descriptor* file_d = get_file(fd);//for some reason, child-rox gives file_d->file to equal 0
-//printf("%d %u %u\n",fd,file_d,file_d->file);
+    struct file_descriptor* file_d = get_file(fd);
     if (file_d != NULL)
       bytes_written = file_write(file_d->file,buffer,size);
     lock_release(&fs_lock);
   }
 
-  //free(a);
-
-  return bytes_written; //strlen(buffer)+1;
+  return bytes_written;
 }
 
 void sys_seek(int fd, unsigned position)
 {
-  struct file_descriptor* file = get_file(fd);
-  if (file == NULL) sys_exit(-1);
-  file_seek(file->file,position);
+  struct file_descriptor* file_d = get_file(fd);
+  if (file_d == NULL) sys_exit(-1);
+  file_seek(file_d->file,position);
 }
 
 unsigned sys_tell(int fd)
 {
-  struct file_descriptor* file = get_file(fd);
-  if (file == NULL) sys_exit(-1);
+  struct file_descriptor* file_d = get_file(fd);
+  if (file_d == NULL) sys_exit(-1);
 
-  return file_tell(file);
+  return file_tell(file_d);
 }
 
 void sys_close(int fd)
@@ -355,7 +306,7 @@ void sys_close(int fd)
 struct file_descriptor* get_file(int fd)
 {
   struct list_elem* e;
-  struct file_descriptor* file_d;
+  struct file_descriptor* file_d = NULL;
   struct thread* t = thread_current();
   for (e = list_begin (&(t->fds)); e != list_end (&(t->fds)); e = list_next(e))
   {

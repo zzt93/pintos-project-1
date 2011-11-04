@@ -28,35 +28,25 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (struct exec* exec) 
 {
-  //printf("beginning.....\n");
-  //printf("file is %s\n", file_name);
   char *file_name = exec->file_name;
   char *fn_copy;
   tid_t tid;
-//printf("%u\t%u\n",exec->file_name,file_name);
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-  //printf("fn_copy: %s\n", fn_copy);
   exec->file_name = fn_copy;
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, exec);
-  //printf("tid is %d\n", tid);
 
   struct thread* t = thread_by_tid(tid);
-  //printf("thread is %s\n", t->name);
-  
-//  sema_down(&(t->wait_for)); //TODO: wait for load only!! [DONE]
-  //printf("the wait is over\n");
   
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   else
   {
-//printf("waiting\n");
     sema_down(&exec->loaded);
     exec->wait_status->tid = tid;
     if (exec->success)
@@ -69,7 +59,6 @@ process_execute (struct exec* exec)
   return tid;
 }
 
-// TODO: possibly not use tokenizer to avoid string copy?
 int get_count(const char* s)
 {
 
@@ -93,25 +82,15 @@ start_process (void* exec_)
 {
   struct exec* exec = (struct exec*) exec_;
   void* file_name_ = (void*) exec->file_name;
-  //printf("starting process.....\n");
   char *fn_copy;
   fn_copy = palloc_get_page (PAL_USER);
-  //printf("fn_copy is at %p\n", fn_copy);
-
-  if(is_user_vaddr(fn_copy) == false) {
-    //printf("address is not in user space\n");
-  }
   
   if (fn_copy == NULL)
-    thread_exit ();//This might be awful and not work
-  strlcpy (fn_copy, (char*)file_name_, PGSIZE);  
-  
-  // print fn_copy
-  //printf("fn_copy: %s\n", fn_copy);
+    thread_exit ();
+  strlcpy (fn_copy, (char*)file_name_, PGSIZE);
   
   int c = get_count(fn_copy);
 
-  //printf("c: %d\n", c);  
 
   int* v = malloc(sizeof(int)*c);
   
@@ -121,13 +100,10 @@ start_process (void* exec_)
        token = strtok_r (NULL, " ", &save_ptr))
   {
      v[i] = token - fn_copy;
-     //printf("token found[%d]: %s at index %d\n", i, token, v[i]);
      i++;
   }
-  //printf("end tokens\n");
   
   char *file_name = fn_copy;
-  //printf("file_name is %s\n", file_name);
 
   struct intr_frame if_;
   bool success;
@@ -138,7 +114,6 @@ start_process (void* exec_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-//printf("success: %d\n", success);
   if (success)
   {
 
@@ -152,14 +127,11 @@ start_process (void* exec_)
     int old_esp = if_.esp;
   
     for(z = 0; z <= size; z++) {
-      //printf("putting character %c\n", fn_copy[z]);
       *(char*)(if_.esp) = fn_copy[z];
       if_.esp += 1;
     }
 
     if_.esp = old_esp - 4;
-
-    //printf("s is %s\n", start);
 
     if_.esp -= 4;
     *(int *)(if_.esp) = 0;
@@ -168,7 +140,6 @@ start_process (void* exec_)
     for (i = c - 1; i >= 0; i--)
     {
       if_.esp -= 4;
-      //printf("arg %d on stack is %s\n", i, old_esp + v[i]);
       *(void **)(if_.esp) = old_esp + v[i]; /* argv[x] */
     }
 
@@ -196,21 +167,6 @@ start_process (void* exec_)
     thread_exit ();
   }
 
-  //printf("\n\n\n");
-  //int q;
-  //for(q = 19; q >= 0; q--)
-    //printf("q is %p: \t%p\n", (((int*)if_.esp) + q), (int)*(((int*)if_.esp) + q));
-
-  //printf("\n\n\n");
-  //for(q = 19; q >= 0; q--)
-    //printf("q is %p: \t%c\n", ((((int*)if_.esp) + q)), (char)((int)*(((int*)if_.esp) + q)));
-
-  //printf("phys base is %p\n", PHYS_BASE);
-
-  //printf("q at 0xbffffff9 is %s\n", 0xbffffff9);
-
-  //printf("jumping...\n");
-
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -236,16 +192,6 @@ int
 process_wait (tid_t child_tid) 
 {
   return sys_wait(child_tid);
-  /*int exit_status = -1;
-  struct wait_status* child_wait_status = find_child (child_tid);
-  if (child_wait_status != NULL)
-  {
-    list_remove (&child_wait_status->elem);
-    sema_down (&child_wait_status->done);
-    exit_status = child_wait_status->exit_status;
-    free(child_wait_status);
-  }
-  return exit_status;*/
 }
 
 
@@ -385,11 +331,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name);
   if (file == NULL) 
     {
-      //printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
   t->this_file = file;
-  file_deny_write(t->this_file);//TODO: not actually a to do, just noting that I added this line and above
+  file_deny_write(t->this_file);
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -399,7 +344,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
       || ehdr.e_phentsize != sizeof (struct Elf32_Phdr)
       || ehdr.e_phnum > 1024) 
     {
-      //printf ("load: %s: error loading executable\n", file_name);
       goto done; 
     }
 
@@ -473,7 +417,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-//  file_close (file);
   return success;
 }
 
