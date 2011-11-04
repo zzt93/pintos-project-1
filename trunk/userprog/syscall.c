@@ -225,9 +225,9 @@ int sys_create(const char* file, unsigned initial_size)
   filesys_create(file, initial_size);
 }
 
-int sys_remove(const char* file)
+bool sys_remove(const char* file)
 {
-  return 0;
+  return filesys_remove(file);
 }
 
 int sys_open (const char *ufile)

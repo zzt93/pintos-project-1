@@ -21,7 +21,7 @@ int sys_wait(pid_t pid);
 int sys_filesize(int fd);
 
 int sys_create(const char* file, unsigned initial_size);
-int sys_remove(const char* file);
+bool sys_remove(const char* file);
 int sys_open(const char *file);
 
 int sys_read(int fd, void *buffer, unsigned size);
