@@ -154,6 +154,7 @@ printf("%s: exit(%d)\n", thread_current()->name, status);
   file_close(t->this_file);
 
   sema_up(&t->wait_status->done);
+//ASSERT(0);
   thread_exit();
 }
 
@@ -244,6 +245,7 @@ int sys_open (const char *ufile)
     if (fd->file != NULL)
     {
       struct thread *cur = thread_current ();
+//printf("%d %u %u\n",cur->next_handle,fd,fd->file);
       handle = fd->handle = cur->next_handle++;
       list_push_front (&cur->fds, &fd->elem);
     }
@@ -280,6 +282,7 @@ int sys_read(int fd, void *buffer, unsigned size)
   {
     lock_acquire(&fs_lock);
     struct file_descriptor* file = get_file(fd);
+//printf("%d %u %u\n",fd,file,file->file);
     if (file != NULL)
       bytes_read = file_read (file->file,buffer,size);
     lock_release(&fs_lock);
@@ -296,16 +299,22 @@ int sys_write(int fd, void *buffer, unsigned size)
   //copy_in(a, buffer, size);
 
   // setp 2: write
+  if (!is_user_vaddr(buffer)) sys_exit(-1); //needed?
   if(fd == STDOUT_FILENO) {
     putbuf(buffer, size);
     bytes_written = size;
   }
-  else if (fd == STDIN_FILENO) sys_exit(-1);
+  else if (fd == STDIN_FILENO)
+  {
+//printf("attempted to write to stdin\n");
+    sys_exit(-1);
+  }
   else
   {
 //printf("writing %d %d",fd,size);
     lock_acquire(&fs_lock);
-    struct file_descriptor* file_d = get_file(fd);
+    struct file_descriptor* file_d = get_file(fd);//for some reason, child-rox gives file_d->file to equal 0
+//printf("%d %u %u\n",fd,file_d,file_d->file);
     if (file_d != NULL)
       bytes_written = file_write(file_d->file,buffer,size);
     lock_release(&fs_lock);
@@ -320,7 +329,7 @@ void sys_seek(int fd, unsigned position)
 {
   struct file_descriptor* file = get_file(fd);
   if (file == NULL) sys_exit(-1);
-  file_seek(file,position);
+  file_seek(file->file,position);
 }
 
 unsigned sys_tell(int fd)
