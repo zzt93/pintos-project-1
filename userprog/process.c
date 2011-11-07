@@ -148,7 +148,7 @@ start_process (void* exec_)
     if_.esp -= 4;
     *(int *)(if_.esp) = c;
     if_.esp -= 4;
-    *(int *)(if_.esp) = 0; // fake return address
+    *(int *)(if_.esp) = 0;
 
     exec->wait_status = thread_current()->wait_status = malloc(sizeof(struct wait_status));
     sema_init (&exec->wait_status->done,0);
