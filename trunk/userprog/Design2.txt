@@ -8,9 +8,9 @@
 
 >> Fill in the names of your group members.
 
-FirstName LastName
-FirstName LastName
-FirstName LastName
+Andrew Berggren
+Eldon Weaver
+Seth Tolle
 
 ---- PRELIMINARIES ----
 
@@ -21,6 +21,12 @@ FirstName LastName
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
+We refered to a couple lines of code to handle argument passing.
+https://github.com/ChrisKXu/pintos/blob/master/userprog/process.c
+
+We referred to this forum for the difference between strok and strok_r.
+http://cboard.cprogramming.com/c-programming/55572-strtok_r.html
+
 			   ARGUMENT PASSING
 			   ================
 
@@ -30,19 +36,43 @@ FirstName LastName
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+-----thread.h:-----
+
+/* Returns the thread specified by the given thread ID. */
+struct thread* thread_by_tid(tid_t tid);
+
+-----process.h:-----
+
+/* Information communicated between process_execute, start_process, and sys_exec. */
+struct exec {
+  bool success;
+  struct semaphore loaded;
+  char* file_name;
+  struct wait_status* wait_status;
+};
+
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
+We begin by placing all the contents of the arguments onto the stack. Then, we add a reference to each argument to the stack in reverse order.  Finally, to complete argv, we add a reference to the first element (argv[0]) to the stack. To avoid overflowing the stack, we restrict the total space of the arguments to be less than one page.
+
 ---- RATIONALE ----
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
 
+strtok stores an internal state between calls, whereas strtok_r does not. Thus, strtok_r can be called from different threads simultaneously. If a thread yields to another thread where both are running strtok_r, both will tokenize correctly. However, the internal state in strtok would prevent thread yields from functioning correctly.
+
 >> A4: In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
+
+1. It adds an additional layer of abstraction to protect the kernal and preserve the kernal for lower-level tasks. Parse failures affect only the shell (a user process) instead of the kernel (a kernel process).
+
+2. Parsing occurs in user space instead of kernel space.
 
 			     SYSTEM CALLS
 			     ============
@@ -53,14 +83,57 @@ FirstName LastName
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+-----thread.h:-----
+/* Contains semaphore and status information about a thread while its execution is begun. */
+struct wait_status {
+  struct semaphore done;
+  int exit_status;
+  int tid;
+  struct list_elem elem;
+};
+
+inside struct thread:
+
+/* The executable file */
+struct file* this_file;
+
+/* A list of the process's children */
+struct list children;
+
+/* The thread's wait status */
+struct wait_status* wait_status;
+
+/* List of the process's open files */
+struct list fds;
+
+/* Gets the next integer of the file description, e.g. starts at 2...10 */
+int next_handle;
+
+
+-----syscall.h:-----
+
+/* The process ID */
+typedef int pid_t;
+
+/* Store information about an open file, unique to a process. */
+struct file_descriptor {
+  int handle;
+  struct file* file;
+  struct list_elem elem;
+};
+
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
+
+File descriptors are unique to a specific process. When a process opens a file, a file descriptor structure is added to that thread. 
 
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
+
+We started from get_user and put_user from the powerpoint slides and added validation. We first confirm that the source address and destination address are in the correct user/kernel space. Next, using ASM, we copy the value in source to the location in destination.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -69,8 +142,12 @@ FirstName LastName
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+When a full page is requested, 4096 calls to pagedir_get_page() will occur. In the same way, a system call that requests only 2 bytes will make 2 calls to pagedir_get_page(). There is room for improvement by retrieving multiple bytes at a time.
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+First, we lookup the wait_status struct of the child on which this process will wait. The wait_status is removed from the list of children so that only a single process can wait on this process. Finally, we perform the wait and return the exit status of the child.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -86,12 +163,21 @@ FirstName LastName
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
+We check the address to ensure each address is a valid address in user memory before reading any data. We do this prior to reading the system call number, the arguments, and any buffer data associated with the arguments. When a fault occurs while attempting to read memory, we immediately call sys_exit, which handles freeing the stack, cleans up all children, and closes any open files. This is a good system because it takes advantage of code reuse, where we allow thread_exit to handle cleanup appropiately.
+
+Example: Suppose the user calls a system call for write, syscall 9, and passes an invalud address to the buffer. When parsing the arguments, a page fault will occur when we attempt to read the location of the buffer. Therefore, sys_exit will be called and all resource cleanup will be handled appropiately.
+
+Example: Suppose the user calls an invalid system call, syscall 537. After reading the system call number successfully, the syscall handler will call sys_exit. Then, all resource cleanup will be handled appropiately.
+
+
 ---- SYNCHRONIZATION ----
 
 >> B7: The "exec" system call returns -1 if loading the new executable
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
+
+We ensure that we do not return before the new process is loaded by using a semaphore and waiting on the load to finish. process_execute will call sema_up when the process either has begun or fails to start. Success/failure is passed back to the sys_exec function using struct exec. 
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -100,16 +186,28 @@ FirstName LastName
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
+There is a semaphore that the parent holds until the child C exits. After the child C exits, the wait struct will still exist. However, the semaphore will have a value of 1. Thus, when the parent calls sys_wait, it will return immediately because it passes through the semaphore. 
+
+The parent handles freeing the resources in all cases because the information to call wait is only needed by the parent. Therefore, it can be deleted once the parent is dead. 
+
+
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+It was on the slides.
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
+The advantage is that we do not have to figure out what process the file belongs to because only that process will have the file_descriptor struct. Our design also makes it easy to find all open files opened by a process. The disadvantage is that it would be difficult (O(n^2)) to get a list of all open files in the entire system.
+
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+We did not change the mapping.
+
 
 			   SURVEY QUESTIONS
 			   ================

@@ -30,6 +30,8 @@ void sys_seek(int fd, unsigned position);
 unsigned sys_tell(int fd);
 void sys_close(int fd);
 
+//void close_files (struct thread* t);
+
 
 struct file_descriptor* get_file(int fd);
 

@@ -123,6 +123,8 @@ void sys_exit(int status)
   printf("%s: exit(%d)\n", thread_current()->name, status);
 
   file_close(t->this_file);
+  empty_children(t);
+  close_files(t);
 
   sema_up(&t->wait_status->done);
   thread_exit();
@@ -168,6 +170,22 @@ void empty_children (struct thread* t)
     list_remove(&child_wait_status->elem);
     free(child_wait_status);
     child_wait_status = NULL;
+  }
+}
+
+void close_files (struct thread* t)
+{
+  struct list_elem* e;
+  struct file_descriptor* cur = NULL;
+
+  if (t == NULL) t = thread_current ();
+
+  for (e = list_begin (&t->fds); e != list_end (&t->fds); e = list_begin(&t->fds))
+  {
+    cur = list_entry (e, struct file_descriptor, elem);
+    file_close(cur->file);
+    list_remove(&(cur->elem));
+    free(cur);
   }
 }
 
