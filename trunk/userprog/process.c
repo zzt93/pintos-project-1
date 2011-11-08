@@ -133,21 +133,27 @@ start_process (void* exec_)
 
     if_.esp = old_esp - 4;
 
+    // add a null terminator to ensure end of string
     if_.esp -= 4;
     *(int *)(if_.esp) = 0;
 
-    /* Now pushing argv[x], and this is where the fun begins */
+    // add references to arguments in reverse order. the address is the address of the stack prior to adding elements plus the offset of those elements.
     for (i = c - 1; i >= 0; i--)
     {
       if_.esp -= 4;
-      *(void **)(if_.esp) = old_esp + v[i]; /* argv[x] */
+      *(char**)(if_.esp) = old_esp + v[i]; 
     }
+    if_.esp -= 4;
 
+    // this is argv. it is a pointer to the first element of argv (argv[0]).
+    *(char **)(if_.esp) = (if_.esp + 4);
     if_.esp -= 4;
-    *(char **)(if_.esp) = (if_.esp + 4); /* argv */
-    if_.esp -= 4;
+
+    // add argument count
     *(int *)(if_.esp) = c;
     if_.esp -= 4;
+
+    // add a null return address
     *(int *)(if_.esp) = 0;
 
     exec->wait_status = thread_current()->wait_status = malloc(sizeof(struct wait_status));
